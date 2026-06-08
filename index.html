@@ -215,6 +215,26 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .mini-task{font-size:12.5px;padding:7px 9px;border-radius:8px;background:var(--panel-2);margin-bottom:6px;cursor:pointer;border:1px solid var(--line-2);display:flex;gap:7px;align-items:center}
 .mini-task:hover{border-color:var(--ink-3)}
 .mini-task .md{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dnd-hint{font-size:12.5px;color:var(--ink-3);padding:2px 4px 0;display:flex;align-items:center;gap:6px}
+.week-board{display:flex;gap:12px;padding-top:10px;padding-bottom:12px;overflow-x:auto}
+.day-col{flex:0 0 210px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius);padding:12px;min-height:200px;transition:.12s;align-self:flex-start}
+.day-col.today{border-color:var(--gold)}
+.day-col.nodrop{opacity:.85;border-style:dashed}
+.day-col.drop-hover{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent)}
+.day-col h4{font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:11px;display:flex;justify-content:space-between;align-items:baseline}
+.day-col.today h4{color:var(--gold)}
+.day-col h4 span{color:var(--ink-3);font-weight:500;font-size:11px}
+.dcard{background:var(--panel-2);border:1px solid var(--line-2);border-radius:9px;padding:8px 9px;margin-bottom:7px;cursor:grab;transition:.1s;border-left:3px solid var(--line)}
+.dcard:hover{border-color:var(--ink-3)}
+.dcard.fl{border-left-color:var(--gold)}
+.dcard.dragging{opacity:.35}
+.dc-title{font-size:12.5px;font-weight:500;display:flex;gap:6px;align-items:flex-start}
+.dc-title .md{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.dc-bot{display:flex;align-items:center;justify-content:space-between;margin-top:7px;gap:6px}
+.dc-proj{font-size:10.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.mv{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;color:var(--ink-3);background:var(--bg-3);font-size:11px;flex-shrink:0;line-height:1}
+.mv:hover{background:var(--accent);color:#fff}
+.col-empty{font-size:11.5px;color:var(--ink-3);text-align:center;padding:14px 0;border:1px dashed var(--line);border-radius:8px}
 
 .review-toggle{display:inline-flex;background:var(--bg-3);border-radius:10px;padding:3px;margin:8px 0 6px}
 .review-toggle button{padding:7px 18px;border-radius:8px;font-weight:600;font-size:13px;color:var(--ink-2);transition:.12s}
@@ -647,14 +667,52 @@ function renderProjects(){
 }
 function bindProjects(){document.querySelectorAll('[data-pid]').forEach(c=>c.onclick=()=>{state.view='proyectos';state.proj=c.dataset.pid;render()})}
 
-/* ---- CALENDARIO ---- */
+/* ---- CALENDARIO: tablero semanal arrastrable ---- */
 function renderCalendar(){
   const open=TASKS.filter(isOpen);
-  const bk={today:open.filter(t=>t.due&&daysFrom(t.due)===0),week:open.filter(t=>t.due&&daysFrom(t.due)>0&&daysFrom(t.due)<=7),month:open.filter(t=>t.due&&daysFrom(t.due)>7&&daysFrom(t.due)<=30),later:open.filter(t=>t.due&&daysFrom(t.due)>30),nodate:open.filter(t=>!t.due)};
-  const col=(title,arr,today)=>`<div class="cal-col ${today?'today':''}"><h4>${title}<span>${arr.length}</span></h4>${arr.length?arr.sort((a,b)=>(daysFrom(a.due)??999)-(daysFrom(b.due)??999)).map(t=>`<div class="mini-task" data-id="${t.id}"><span class="md" style="background:${proj(t.project).color}"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeH(t.title)}</span>${t.due?`<span style="font-size:10.5px;color:var(--ink-3)">${dueLabel(t.due)}</span>`:''}</div>`).join(''):'<div style="font-size:12px;color:var(--ink-3)">—</div>'}</div>`;
-  return `<div class="cal-cols">${col('Hoy',bk.today,true)}${col('Próximos 7 días',bk.week)}${col('Próximos 30 días',bk.month)}${col('Más adelante',bk.later)}${col('Sin fecha',bk.nodate)}</div>`;
+  const cap=(s)=>s.replace(/^\w/,c=>c.toUpperCase());
+  const days=[];for(let i=0;i<7;i++){const d=new Date(todayStr());d.setDate(d.getDate()+i);days.push(d.toISOString().slice(0,10))}
+  const noDate=open.filter(t=>!t.due);
+  const later=open.filter(t=>t.due&&daysFrom(t.due)>6).sort(byDate);
+  let cols='';
+  days.forEach((date,i)=>{
+    const label=i===0?'Hoy':i===1?'Mañana':cap(new Date(date+'T00:00').toLocaleDateString('es',{weekday:'long'}));
+    const dnum=new Date(date+'T00:00').toLocaleDateString('es',{day:'numeric',month:'short'});
+    const arr=open.filter(t=>t.due===date).sort(byDate);
+    cols+=`<div class="day-col ${i===0?'today':''}" data-day="${date}"><h4>${label}<span>${dnum}</span></h4>${arr.map(dcard).join('')||'<div class="col-empty">—</div>'}</div>`;
+  });
+  cols+=`<div class="day-col" data-day="none"><h4>Sin fecha<span>${noDate.length}</span></h4>${noDate.map(dcard).join('')||'<div class="col-empty">—</div>'}</div>`;
+  if(later.length)cols+=`<div class="day-col nodrop"><h4>Más adelante<span>${later.length}</span></h4>${later.map(dcard).join('')}</div>`;
+  return `<div class="dnd-hint">${svg(I.arrow,14)} Arrastra una tarjeta a otro día para reprogramarla — o usa ◀ ▶ en el celular.</div><div class="week-board">${cols}</div>`;
 }
-function bindMini(){document.querySelectorAll('.mini-task').forEach(m=>m.onclick=()=>select(m.dataset.id))}
+function dcard(t){const sup=!isMine(t);
+  return `<div class="dcard ${t.flag?'fl':''}" draggable="true" data-id="${t.id}">
+    <div class="dc-title"><span class="md" style="background:${proj(t.project).color}"></span><span>${t.flag?'★ ':''}${escapeH(t.title)}</span></div>
+    <div class="dc-bot"><button class="mv" data-mv="-1" data-id="${t.id}" title="Día anterior">◀</button>
+      <span class="dc-proj">${sup?escapeH(normPerson(t.responsible)):projName(t.project)}</span>
+      <button class="mv" data-mv="1" data-id="${t.id}" title="Día siguiente">▶</button></div>
+  </div>`;
+}
+function bindMini(){
+  document.querySelectorAll('.dcard').forEach(c=>{
+    c.onclick=(e)=>{if(e.target.closest('[data-mv]'))return;select(c.dataset.id)};
+    c.ondragstart=(e)=>{e.dataTransfer.setData('text/plain',c.dataset.id);e.dataTransfer.effectAllowed='move';c.classList.add('dragging')};
+    c.ondragend=()=>c.classList.remove('dragging');
+  });
+  document.querySelectorAll('[data-mv]').forEach(b=>b.onclick=(e)=>{e.stopPropagation();moveDay(b.dataset.id,parseInt(b.dataset.mv))});
+  document.querySelectorAll('.day-col[data-day]').forEach(col=>{
+    col.ondragover=(e)=>{e.preventDefault();e.dataTransfer.dropEffect='move';col.classList.add('drop-hover')};
+    col.ondragleave=(e)=>{if(!col.contains(e.relatedTarget))col.classList.remove('drop-hover')};
+    col.ondrop=(e)=>{e.preventDefault();col.classList.remove('drop-hover');dropOnDay(e.dataTransfer.getData('text/plain'),col.dataset.day)};
+  });
+}
+function dropOnDay(id,day){const t=TASKS.find(x=>x.id===id);if(!t)return;
+  if(day==='none'){if(t.due===''){return}t.due='';logH(t,'Movida a Sin fecha');save();render();toast('Movida a Sin fecha')}
+  else{if(t.due===day){return}t.due=day;t.carried=0;if(t.status==='pospuesto')t.status='no_iniciado';logH(t,'Reprogramada a '+dueLabel(day));save();render();toast('Movida a '+dueLabel(day))}}
+function moveDay(id,delta){const t=TASKS.find(x=>x.id===id);if(!t)return;
+  let base=t.due?new Date(t.due+'T00:00'):new Date(todayStr());base.setDate(base.getDate()+delta);
+  let nd=base.toISOString().slice(0,10);if(daysFrom(nd)<0)nd=todayStr();
+  t.due=nd;t.carried=0;if(t.status==='pospuesto')t.status='no_iniciado';logH(t,'Movida a '+dueLabel(nd));save();render();toast(dueLabel(nd))}
 
 /* ---- REVISIÓN ---- */
 function renderReview(){
