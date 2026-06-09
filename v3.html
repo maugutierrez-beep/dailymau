@@ -556,11 +556,11 @@ async function cloudLoad(){
     saveLocal();return true;
   }catch(e){return false}}
 async function cloudSave(){if(!cloudReady)return;setCloud('saving');
-  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',headers:{...hGet(),'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({data:serialize(),updated_at:new Date().toISOString()})});
+  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({data:serialize(),updated_at:new Date().toISOString()})});
     setCloud(r.ok?'saved':'error')}catch(e){setCloud('error')}}
 function flushSave(){if(!cloudReady)return;clearTimeout(saveT);
   try{fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',
-    headers:{...hGet(),'Content-Type':'application/json',Prefer:'return=minimal'},
+    headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'return=minimal'},
     body:JSON.stringify({data:serialize(),updated_at:new Date().toISOString()}),keepalive:true}).catch(()=>{})}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSave()});
 window.addEventListener('pagehide',flushSave);
