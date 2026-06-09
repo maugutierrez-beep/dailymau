@@ -321,7 +321,19 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .day-bring{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:8px 13px;border-radius:9px;margin:8px 0 6px}
 .day-bring:hover{filter:brightness(.97)}
 .day-bring svg{width:14px;height:14px}
-.day-group{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:20px 4px 8px}
+.day-group{display:flex;align-items:center;gap:8px;width:100%;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:16px 6px 7px;background:none;cursor:pointer;text-align:left}
+.day-group:hover{color:var(--ink-2)}
+.day-group .chev{width:12px;height:12px;transition:transform .18s;transform:rotate(-90deg);opacity:.65;margin-left:2px}
+.day-group .chev.open{transform:rotate(0)}
+.drow{align-items:center;padding:9px 14px;gap:11px}
+.drow-main{flex:1;min-width:0;display:flex;align-items:baseline;gap:9px;overflow:hidden}
+.drow-main .t-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drow-na{font-size:11.5px;color:var(--gold);display:inline-flex;align-items:center;gap:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.drow-na svg{width:10px;height:10px;flex-shrink:0}
+.drow-side{display:flex;align-items:center;gap:9px;flex-shrink:0}
+.drow-resp{font-size:11px;color:var(--accent);font-weight:600;display:inline-flex;gap:5px;align-items:center;white-space:nowrap}
+.drow-resp .av{width:18px;height:18px;border-radius:50%;color:#fff;font-size:9px;font-weight:600;display:inline-grid;place-items:center}
+.drow .row-actions{align-self:center}
 .dg-dot{width:8px;height:8px;border-radius:50%}
 .dg-c{color:var(--ink-3)}
 .task[draggable]{cursor:grab}
@@ -472,15 +484,38 @@ function setCloud(s){const el=document.getElementById('cloud');if(!el)return;
   const map={saving:['saving','Guardando…'],saved:['ok','Sincronizado'],error:['err','Sin conexión · local'],off:['','Solo local']};
   const d=map[s]||['',''];el.innerHTML=`<span class="cloud-dot ${d[0]}"></span>${d[1]}${s==='saved'?' · '+new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):''}`}
 function scheduleCloud(){if(!cloudReady)return;clearTimeout(saveT);setCloud('saving');saveT=setTimeout(cloudSave,700)}
+function mergeData(local,cloud){
+  const tm=new Map();
+  (cloud.tasks||[]).forEach(t=>tm.set(t.id,t));
+  (local.tasks||[]).forEach(t=>{const ex=tm.get(t.id);if(!ex){tm.set(t.id,t);return}const ld=(t.history&&t.history.length?t.history[t.history.length-1].d:t.createdAt)||'';const cd=(ex.history&&ex.history.length?ex.history[ex.history.length-1].d:ex.createdAt)||'';if(ld>=cd)tm.set(t.id,t)});
+  const pm=new Map();
+  (cloud.projects||[]).forEach(p=>pm.set(p.id,p));
+  (local.projects||[]).forEach(p=>pm.set(p.id,p));
+  const ps=new Set([...(cloud.people||[]),...(local.people||[])]);
+  return {tasks:[...tm.values()],projects:[...pm.values()],people:[...ps]}
+}
 async function cloudLoad(){
   if(CLOUD.key.startsWith('__'))return false;
   try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}&select=data`,{headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key}});
     if(!r.ok)throw 0;const j=await r.json();
-    if(j&&j[0]&&j[0].data){const p=typeof j[0].data==='string'?JSON.parse(j[0].data):j[0].data;if(applyParsed(p)){saveLocal();return true}return null}
-    return null;
+    if(!j||!j[0]||!j[0].data)return null;
+    const p=typeof j[0].data==='string'?JSON.parse(j[0].data):j[0].data;
+    let ct=[],cp=[],cpe=[];
+    if(Array.isArray(p))ct=p;
+    else if(p&&Array.isArray(p.tasks)){ct=p.tasks;cp=p.projects||[];cpe=p.people||[]}
+    if(!ct.length&&!TASKS.length)return null;
+    const m=mergeData({tasks:TASKS,projects:PROJECTS,people:PEOPLE},{tasks:ct,projects:cp,people:cpe});
+    TASKS=m.tasks;if(m.projects.length)PROJECTS=m.projects;if(m.people.length)PEOPLE=[...m.people];
+    saveLocal();return true;
   }catch(e){return false}}
 async function cloudSave(){if(!cloudReady)return;setCloud('saving');
-  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({data:serialize(),updated_at:new Date().toISOString()})});
+  try{
+    try{const r2=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}&select=data`,{headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key}});
+      if(r2.ok){const j2=await r2.json();if(j2&&j2[0]&&j2[0].data){const p2=typeof j2[0].data==='string'?JSON.parse(j2[0].data):j2[0].data;
+        let ct=[],cp=[],cpe=[];if(Array.isArray(p2))ct=p2;else if(p2&&Array.isArray(p2.tasks)){ct=p2.tasks;cp=p2.projects||[];cpe=p2.people||[]}
+        const m=mergeData({tasks:TASKS,projects:PROJECTS,people:PEOPLE},{tasks:ct,projects:cp,people:cpe});
+        TASKS=m.tasks;if(m.projects.length)PROJECTS=m.projects;if(m.people.length)PEOPLE=[...m.people];saveLocal()}}}catch(e){}
+    const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({data:serialize(),updated_at:new Date().toISOString()})});
     setCloud(r.ok?'saved':'error')}catch(e){setCloud('error')}}
 async function cloudInit(){
   if(CLOUD.key.startsWith('__')){cloudReady=false;setCloud('off');return}
@@ -564,6 +599,7 @@ const addD=(n)=>{const x=new Date();x.setDate(x.getDate()+n);return localISO(x)}
 /* ---- NAV ---- */
 let COLLAPSE={};try{COLLAPSE=JSON.parse(localStorage.getItem('dailymau_collapse')||'{}')}catch(e){}
 function toggleCollapse(k){COLLAPSE[k]=!COLLAPSE[k];try{localStorage.setItem('dailymau_collapse',JSON.stringify(COLLAPSE))}catch(e){}renderNav()}
+function toggleDayGroup(pid){const k='dg_'+pid;COLLAPSE[k]=!COLLAPSE[k];try{localStorage.setItem('dailymau_collapse',JSON.stringify(COLLAPSE))}catch(e){}render()}
 function secHeader(label,key){const open=!COLLAPSE[key];return `<button class="nav-sec-toggle" data-collapse="${key}"><span>${label}</span><svg class="chev ${open?'open':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>`}
 function renderNav(){
   let h=`<div class="nav-section">Vistas</div>`;
@@ -617,7 +653,7 @@ function render(){
   document.getElementById('eyebrow').textContent=state.view==='proyectos'?'Proyecto':(state.view==='personas'&&state.person?'Persona':title);
   document.getElementById('viewSub').textContent=sub;
   const scroll=document.getElementById('scroll'),fbar=document.getElementById('filters');fbar.style.display='none';
-  if(state.view==='dia'){scroll.innerHTML=renderDay();bindTasks();const bt=document.getElementById('bringT');if(bt)bt.onclick=bringTomorrow}
+  if(state.view==='dia'){scroll.innerHTML=renderDay();bindTasks();const bt=document.getElementById('bringT');if(bt)bt.onclick=bringTomorrow;document.querySelectorAll('[data-dg]').forEach(b=>b.onclick=()=>toggleDayGroup(b.dataset.dg))}
   else if(state.view==='hoy'){scroll.innerHTML=renderBoard();bindBoard()}
   else if(state.view==='realizadas'){scroll.innerHTML=renderDone();bindTasks()}
   else if(state.view==='calendario'){scroll.innerHTML=renderCalendar();bindMini()}
@@ -803,19 +839,20 @@ function renderDay(){
   if(!today.length)return h+`<div class="empty" style="padding:30px 20px"><h3>Día libre</h3><p>Agrega tareas o trae las de mañana.</p></div>`;
   const byproj={};today.forEach(t=>{(byproj[t.project]=byproj[t.project]||[]).push(t)});
   const order=Object.keys(byproj).sort((a,b)=>byproj[b].length-byproj[a].length);
-  order.forEach(pid=>{h+=`<div class="day-group"><span class="dg-dot" style="background:${proj(pid).color}"></span>${escapeH(projName(pid))} <span class="dg-c">${byproj[pid].length}</span></div>`+byproj[pid].sort(byDate).map(dayRow).join('')});
+  order.forEach(pid=>{const op=!COLLAPSE['dg_'+pid];const arr=byproj[pid].sort(byDate);
+    h+=`<button class="day-group" data-dg="${pid}"><span class="dg-dot" style="background:${proj(pid).color}"></span><span style="flex:1">${escapeH(projName(pid))}</span><span class="dg-c">${arr.length}</span><svg class="chev ${op?'open':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>`;
+    if(op)h+=arr.map(dayRow).join('')});
   return h;
 }
 function dayRow(t){const sup=!isMine(t);
-  return `<div class="task" data-id="${t.id}" draggable="true">
+  return `<div class="task drow" data-id="${t.id}" draggable="true">
     <button class="check" data-check="${t.id}">${svg(I.check,11)}</button>
-    <div class="t-body"><div class="t-title">${escapeH(t.title)}</div>
-      <div class="t-meta">
-        ${t.carried>0?`<span class="carried">${svg(I.loop,11)} arrastrada ${t.carried}d</span>`:''}
-        ${sup?`<span class="who sup"><span class="av" style="background:${colorFor(t.responsible)}">${initials(t.responsible)}</span>${escapeH(normPerson(t.responsible))}</span>`:''}
-        ${t.nextAction?`<span class="who" style="color:var(--gold)">${svg(I.arrow,11)} ${escapeH(t.nextAction)}</span>`:''}
-      </div></div>
-    <div class="row-actions"><button class="ra" data-act="snooze" data-id="${t.id}" title="Pasar a mañana">${svg(I.snooze,16)}</button><button class="ra" data-act="someday" data-id="${t.id}" title="En un futuro (sin fecha)">${svg(I.fwd,16)}</button></div>
+    <div class="drow-main"><span class="t-title">${escapeH(t.title)}</span>${t.nextAction?`<span class="drow-na">${svg(I.arrow,10)} ${escapeH(t.nextAction)}</span>`:''}</div>
+    <div class="drow-side">
+      ${t.carried>0?`<span class="carried">${svg(I.loop,11)} ${t.carried}d</span>`:''}
+      ${sup?`<span class="drow-resp"><span class="av" style="background:${colorFor(t.responsible)}">${initials(t.responsible)}</span>${escapeH(normPerson(t.responsible))}</span>`:''}
+      <span class="row-actions"><button class="ra" data-act="snooze" data-id="${t.id}" title="Mañana">${svg(I.snooze,16)}</button><button class="ra" data-act="someday" data-id="${t.id}" title="En un futuro">${svg(I.fwd,16)}</button></span>
+    </div>
   </div>`;
 }
 function bringTomorrow(){const tmr=addD(1);let n=0;TASKS.forEach(t=>{if(isOpen(t)&&t.due===tmr){t.due=todayStr();t.carried=0;if(t.status==='pospuesto')t.status='no_iniciado';logH(t,'Adelantada a hoy');n++}});if(n){save();render();toast(n+' traídas a hoy')}}
