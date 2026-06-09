@@ -57,12 +57,11 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .brand-name span{color:var(--gold)}
 .brand-sub{font-size:11px;color:var(--ink-3);margin-top:-2px}
 
-.quick-add{margin:6px 14px 14px}
-.quick-add input{width:100%;background:var(--bg-2);border:1.5px solid var(--accent);border-radius:11px;padding:12px 12px 12px 36px;outline:none;transition:.15s;font-weight:600;font-size:13.5px;color:var(--ink);box-shadow:var(--shadow);
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231f3a5f' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:13px center}
-.quick-add input:focus{box-shadow:0 0 0 3px var(--accent-soft)}
-.quick-add input::placeholder{color:var(--accent);font-weight:600;opacity:.85}
-html[data-theme="dark"] .quick-add input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237ba3d6' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E")}
+.quick-add{margin:8px 14px 14px}
+.add-btn{width:100%;background:var(--accent);color:#fff;font-weight:600;font-size:14px;border-radius:11px;padding:12px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow);transition:.12s}
+.add-btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.add-btn:active{transform:none}
+.add-btn svg{width:17px;height:17px}
 
 .nav{flex:1;overflow-y:auto;padding:2px 10px 14px}
 .nav-section{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:14px 10px 6px}
@@ -323,7 +322,7 @@ html[data-theme="dark"] .quick-add input{background-image:url("data:image/svg+xm
       <svg width="34" height="34" viewBox="0 0 44 44"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2d4d77"/><stop offset="1" stop-color="#1f3a5f"/></linearGradient></defs><rect x="2" y="2" width="40" height="40" rx="11" fill="url(#lg)"/><path d="M14 22l5 5 11-13" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><line x1="13" y1="32" x2="31" y2="32" stroke="#d4ab63" stroke-width="2.6" stroke-linecap="round"/></svg>
       <div><div class="brand-name">Daily<span>Mau</span></div><div class="brand-sub">Tareas del día</div></div>
     </div>
-    <div class="quick-add"><input id="quickAdd" placeholder="Agregar tarea…  (Enter)" autocomplete="off"></div>
+    <div class="quick-add"><button id="addBtn" class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Agregar tarea</button></div>
     <nav class="nav" id="nav"></nav>
     <div class="sidebar-foot">
       <div class="cloud-pill" id="cloud"><span class="cloud-dot"></span>Solo local</div>
@@ -939,7 +938,7 @@ function openModal(prefill={}){
   rs.onchange=()=>{if(rs.value==='__new__'){const n=prompt('Nombre del nuevo responsable:');if(n&&n.trim()){const o=document.createElement('option');o.value=n.trim();o.textContent=n.trim();rs.insertBefore(o,rs.lastElementChild);rs.value=n.trim()}else rs.value='Yo'}};
   document.getElementById('mTitle').value=prefill.title||'';
   document.getElementById('mDesc').value='';
-  document.getElementById('mDue').value=prefill.due||(state.view==='hoy'?todayStr():'');
+  document.getElementById('mDue').value=prefill.due||todayStr();
   document.getElementById('mNext').value='';
   document.getElementById('mSuggest').innerHTML='';
   document.getElementById('mTitle').oninput=null;
@@ -982,7 +981,7 @@ document.getElementById('mCancel').onclick=closeModal;
 document.getElementById('mSave').onclick=saveModal;
 document.getElementById('overlay').onclick=(e)=>{if(e.target.id==='overlay')closeModal()};
 document.getElementById('mTitle').onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();saveModal()}};
-document.getElementById('quickAdd').onkeydown=(e)=>{if(e.key==='Enter'&&e.target.value.trim()){quickAdd(e.target.value.trim());e.target.value=''}};
+document.getElementById('addBtn').onclick=()=>openModal();
 document.getElementById('search').oninput=(e)=>{state.search=e.target.value.trim();render()};
 document.getElementById('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(TASKS,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dailymau_'+todayStr()+'.json';a.click();toast('Respaldo exportado')};
 document.addEventListener('keydown',(e)=>{if(e.target.matches('input,textarea,select'))return;if(e.key==='n'||e.key==='N'){e.preventDefault();openModal()}if(e.key==='Escape'){closeModal();if(state.sel){state.sel=null;render()}}if(e.key==='/'){e.preventDefault();document.getElementById('search').focus()}});
