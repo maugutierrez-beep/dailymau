@@ -399,7 +399,7 @@ const TYPES=[{id:'tarea',name:'Tarea',ic:'check'},{id:'seguimiento',name:'Seguim
 const STATUSES=[{id:'no_iniciado',name:'No iniciado'},{id:'en_proceso',name:'En proceso'},{id:'esperando',name:'Esperando respuesta'},{id:'pospuesto',name:'Arrastrado'},{id:'completado',name:'Realizado'},{id:'cancelado',name:'Cancelado'}];
 const CHANNELS=[{id:'',name:'—'},{id:'whatsapp',name:'WhatsApp'},{id:'correo',name:'Correo'},{id:'llamada',name:'Llamada'},{id:'reunion',name:'Reunión'}];
 const VIEWS=[
-  {id:'hoy',name:'Tareas',ic:'sun'},{id:'todas',name:'Todas',ic:'list'},
+  {id:'hoy',name:'Tareas',ic:'sun'},{id:'realizadas',name:'Realizadas',ic:'check'},{id:'todas',name:'Todas',ic:'list'},
   {id:'personas',name:'Personas',ic:'users'},{id:'seguimientos',name:'Seguimientos',ic:'loop'},
   {id:'inbox',name:'Inbox',ic:'inbox'},{id:'calendario',name:'Calendario',ic:'cal'},
   {id:'revision',name:'Revisión diaria',ic:'sparkle'},
@@ -430,7 +430,8 @@ const svg=(p,w=16)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 
 let TASKS=[],PEOPLE=[],state={view:'hoy',sel:null,filter:{},search:'',proj:null,person:null,revMode:'am',showDone:false};
 const KEY='dailymau_tasks_v1';
-const todayStr=()=>new Date().toISOString().slice(0,10);
+function localISO(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+const todayStr=()=>localISO(new Date());
 const uid=()=>'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
 /* ---- PERSISTENCIA: caché local + nube (Supabase) ---- */
@@ -532,12 +533,12 @@ function suggest(text){
   if(!person){const mP=text.match(/(?:a|con|para)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?)/);if(mP)person=mP[1]}
   return {project,type,due,flag,person};
 }
-const addD=(n)=>{const x=new Date();x.setDate(x.getDate()+n);return x.toISOString().slice(0,10)};
+const addD=(n)=>{const x=new Date();x.setDate(x.getDate()+n);return localISO(x)};
 
 /* ---- NAV ---- */
 function renderNav(){
   let h=`<div class="nav-section">Vistas</div>`;
-  h+=navItem(VIEWS.find(v=>v.id==='hoy'));
+  h+=navItem(VIEWS.find(v=>v.id==='hoy'))+navItem(VIEWS.find(v=>v.id==='realizadas'));
   h+=`<div class="nav-section">Personas</div>`;
   allPeople().forEach(n=>{const op=TASKS.filter(t=>isOpen(t)&&(normPerson(t.responsible)||'(sin asignar)')===n).length;const a=state.view==='personas'&&state.person===n;
     h+=`<button class="nav-item ${a?'active':''}" data-personnav="${escapeAttr(n)}"><span class="av-sm" style="background:${colorFor(n)}">${initials(n)}</span><span style="flex:1">${n==='Yo'?'Yo':escapeH(n)}</span>${op?`<span class="count">${op}</span>`:''}</button>`});
@@ -548,6 +549,8 @@ function renderNav(){
   h+=`<button class="nav-item nav-add" id="newProj"><span class="ico">${svg('<path d="M12 5v14M5 12h14"/>',15)}</span>Nuevo proyecto</button>`;
   document.getElementById('nav').innerHTML=h;
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));
+  const rb=document.querySelector('[data-view="realizadas"]');
+  if(rb){rb.ondragover=e=>{e.preventDefault();rb.classList.add('navdrop')};rb.ondragleave=()=>rb.classList.remove('navdrop');rb.ondrop=e=>{e.preventDefault();rb.classList.remove('navdrop');completeTaskById(e.dataTransfer.getData('text/plain'))}}
   document.querySelectorAll('[data-proj]').forEach(b=>{
     b.onclick=()=>{state.view='proyectos';state.proj=b.dataset.proj;state.sel=null;state.person=null;closeSidebar();render()};
     b.ondragover=e=>{e.preventDefault();b.classList.add('navdrop')};
@@ -569,7 +572,7 @@ function navItem(v,count){const a=state.view===v.id;return `<button class="nav-i
 function go(v){state.view=v;state.proj=null;state.person=null;state.sel=null;state.filter={};closeSidebar();render()}
 function render(){
   renderNav();updatePeopleList();
-  const titles={hoy:['Tareas',fmtDate()],todas:['Todas las pendientes','Vista consolidada por proyecto'],personas:['Personas','Tareas propias y supervisadas'],seguimientos:['Seguimientos','Temas que dependen de otros'],inbox:['Inbox','Captura rápida sin clasificar'],calendario:['Calendario','Tareas por fecha'],revision:['Revisión diaria','Inicio y cierre del día'],proyectos:[state.proj?projName(state.proj):'Proyectos','']};
+  const titles={hoy:['Tareas',fmtDate()],realizadas:['Realizadas','Historial de lo completado'],todas:['Todas las pendientes','Vista consolidada por proyecto'],personas:['Personas','Tareas propias y supervisadas'],seguimientos:['Seguimientos','Temas que dependen de otros'],inbox:['Inbox','Captura rápida sin clasificar'],calendario:['Calendario','Tareas por fecha'],revision:['Revisión diaria','Inicio y cierre del día'],proyectos:[state.proj?projName(state.proj):'Proyectos','']};
   let [title,sub]=titles[state.view]||['',''];
   if(state.view==='personas'&&state.person){title=state.person==='Yo'?'Mis tareas':state.person;sub=state.person==='Yo'?'Pendientes a tu cargo':'Tareas que supervisas'}
   document.getElementById('viewTitle').textContent=title;
@@ -577,6 +580,7 @@ function render(){
   document.getElementById('viewSub').textContent=sub;
   const scroll=document.getElementById('scroll'),fbar=document.getElementById('filters');fbar.style.display='none';
   if(state.view==='hoy'){scroll.innerHTML=renderBoard();bindBoard()}
+  else if(state.view==='realizadas'){scroll.innerHTML=renderDone();bindTasks()}
   else if(state.view==='calendario'){scroll.innerHTML=renderCalendar();bindMini()}
   else if(state.view==='revision'){scroll.innerHTML=renderReview();bindReview()}
   else if(state.view==='personas'&&!state.person){scroll.innerHTML=renderPeople();bindPeople()}
@@ -691,6 +695,17 @@ function renderProjectView(){
   let h='';
   if(state.proj!=='general')h+=`<div class="proj-toolbar"><button class="del-proj" data-delproj="${state.proj}">${svg(I.trash,14)} Eliminar proyecto</button></div>`;
   h+=list.length?list.map(taskRow).join(''):`<div class="empty" style="padding:40px 20px"><h3>Sin tareas</h3><p>Este proyecto no tiene pendientes.</p></div>`;
+  return h;
+}
+function doneDateLabel(k){if(k==='—')return 'Sin fecha';const dd=daysFrom(k);if(dd===0)return 'Hoy';if(dd===-1)return 'Ayer';return new Date(k+'T00:00').toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long'}).replace(/^\w/,c=>c.toUpperCase())}
+function renderDone(){
+  const done=TASKS.filter(isDone).sort((a,b)=>(b.completedAt||'').localeCompare(a.completedAt||''));
+  if(!done.length)return emptyState('Nada realizado aún','Marca tareas como realizadas (o arrástralas a Realizadas) y aparecerán aquí con su fecha.');
+  const groups={};
+  done.forEach(t=>{const d=t.completedAt||(t.history&&t.history.length?t.history[t.history.length-1].d:'—');(groups[d]=groups[d]||[]).push(t)});
+  const keys=Object.keys(groups).sort((a,b)=>b.localeCompare(a));
+  let h=`<div style="font-size:12.5px;color:var(--ink-3);padding:2px 4px 8px"><b style="color:var(--ink)">${done.length}</b> realizada(s) · arrastra tareas a “Realizadas” en el menú para completarlas</div>`;
+  keys.forEach(k=>{h+=`<div class="group-h">${doneDateLabel(k)} <span class="gc">${groups[k].length}</span></div>`+groups[k].map(taskRow).join('')});
   return h;
 }
 function renderAll(){
@@ -953,6 +968,7 @@ function createPerson(){const name=prompt('Nombre de la nueva persona:');if(!nam
 function deletePerson(name){if(normPerson(name)==='Yo'){toast('No puedes eliminarte');return}const n=TASKS.filter(t=>normPerson(t.responsible)===name).length;if(!confirm(`¿Eliminar a "${name}"?`+(n?`\nSus ${n} tarea(s) pasarán a ti (Yo).`:'')))return;TASKS.forEach(t=>{if(normPerson(t.responsible)===name){t.responsible='Yo';logH(t,'Responsable eliminado → Yo')}});PEOPLE=PEOPLE.filter(x=>x!==name);if(state.person===name){state.person=null;state.view='hoy'}save();render();toast('Persona eliminada')}
 function assignTaskProject(id,pid){const t=TASKS.find(x=>x.id===id);if(!t||t.project===pid)return;t.project=pid;logH(t,'Movida a '+projName(pid));save();render();toast('→ '+projName(pid))}
 function assignTaskPerson(id,name){const t=TASKS.find(x=>x.id===id);if(!t)return;const nm=normPerson(name);if(normPerson(t.responsible)===nm)return;t.responsible=nm;if(nm!=='Yo'&&t.status==='no_iniciado')t.status='esperando';logH(t,'Responsable: '+nm);save();render();toast('Asignada a '+nm)}
+function completeTaskById(id){const t=TASKS.find(x=>x.id===id);if(!t||isDone(t))return;t.status='completado';t.completedAt=todayStr();logH(t,'Realizada');save();render();toast('Realizada ✓')}
 
 /* ---- BIND LISTAS ---- */
 function bindTasks(){
