@@ -942,12 +942,10 @@ function openModal(prefill={}){
   document.getElementById('mDue').value=prefill.due||(state.view==='hoy'?todayStr():'');
   document.getElementById('mNext').value='';
   document.getElementById('mSuggest').innerHTML='';
-  setTimeout(()=>document.getElementById('mTitle').focus(),50);
-  document.getElementById('mTitle').oninput=(e)=>{const s=suggest(e.target.value);
-    document.getElementById('mProject').value=s.project;
-    if(s.due)document.getElementById('mDue').value=s.due;
-    if(s.person){const r=document.getElementById('mResp');if(![...r.options].some(o=>o.value===s.person)){const o=document.createElement('option');o.value=s.person;o.textContent=s.person;r.insertBefore(o,r.lastElementChild)}r.value=s.person}
-    document.getElementById('mSuggest').innerHTML=`${svg(I.sparkle,14)} ${projName(s.project)}${s.due?' · '+dueLabel(s.due):''}${s.person?' · '+s.person:''}`};
+  document.getElementById('mTitle').oninput=null;
+  const ti=document.getElementById('mTitle');
+  requestAnimationFrame(()=>ti.focus());
+  setTimeout(()=>ti.focus(),60);
 }
 function closeModal(){document.getElementById('overlay').classList.remove('show')}
 function saveModal(){
