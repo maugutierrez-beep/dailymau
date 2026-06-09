@@ -166,6 +166,9 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 @media (hover:none){.row-actions{opacity:1}}
 .task:hover .row-actions{opacity:1}
 .ra{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:var(--ink-3)}
+.ra-snooze{width:44px;align-self:stretch;height:auto;border-radius:0 12px 12px 0;background:var(--bg-3);color:var(--accent);opacity:1!important;margin:-10px -14px -10px 0;transition:background .15s}
+.ra-snooze:hover{background:var(--accent);color:#fff}
+.ra-snooze svg{width:20px;height:20px}
 .ra:hover{background:var(--bg-3);color:var(--ink)}
 .ra.starred{color:var(--gold)}
 .ra svg{width:18px;height:18px}
@@ -875,7 +878,7 @@ function dayRow(t){const sup=!isMine(t);
     <div class="drow-main"><span class="t-title">${escapeH(t.title)}</span>${t.nextAction?`<span class="drow-na">${svg(I.arrow,10)} ${escapeH(t.nextAction)}</span>`:''}</div>
     <div class="drow-side">
       ${sup?`<span class="drow-resp"><span class="av" style="background:${colorFor(t.responsible)}">${initials(t.responsible)}</span>${escapeH(normPerson(t.responsible))}</span>`:''}
-      <span class="row-actions"><button class="ra" data-act="snooze" data-id="${t.id}" title="Mañana">${svg(I.snooze,16)}</button><button class="ra" data-act="someday" data-id="${t.id}" title="En un futuro">${svg(I.fwd,16)}</button></span>
+      <span class="row-actions"><button class="ra ra-snooze" data-act="snooze" data-id="${t.id}" title="Mañana">${svg(I.snooze,20)}</button><button class="ra" data-act="someday" data-id="${t.id}" title="En un futuro">${svg(I.fwd,16)}</button></span>
     </div>
   </div>`;
 }
