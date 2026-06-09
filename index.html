@@ -308,6 +308,9 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .cloud-dot.saving{background:var(--amber);animation:pulse 1s infinite}
 .cloud-dot.err{background:var(--red)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.task[draggable]{cursor:grab}
+.task.dragging{opacity:.4}
+.nav-item.navdrop{background:var(--accent-soft)!important;outline:2px dashed var(--accent);outline-offset:-2px;color:var(--accent)}
 .menu-btn{display:none}
 .backdrop{display:none}
 @media(max-width:900px){
@@ -545,8 +548,18 @@ function renderNav(){
   h+=`<button class="nav-item nav-add" id="newProj"><span class="ico">${svg('<path d="M12 5v14M5 12h14"/>',15)}</span>Nuevo proyecto</button>`;
   document.getElementById('nav').innerHTML=h;
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));
-  document.querySelectorAll('[data-proj]').forEach(b=>b.onclick=()=>{state.view='proyectos';state.proj=b.dataset.proj;state.sel=null;state.person=null;closeSidebar();render()});
-  document.querySelectorAll('[data-personnav]').forEach(b=>b.onclick=()=>{state.view='personas';state.person=b.dataset.personnav;state.proj=null;state.sel=null;closeSidebar();render()});
+  document.querySelectorAll('[data-proj]').forEach(b=>{
+    b.onclick=()=>{state.view='proyectos';state.proj=b.dataset.proj;state.sel=null;state.person=null;closeSidebar();render()};
+    b.ondragover=e=>{e.preventDefault();b.classList.add('navdrop')};
+    b.ondragleave=()=>b.classList.remove('navdrop');
+    b.ondrop=e=>{e.preventDefault();b.classList.remove('navdrop');assignTaskProject(e.dataTransfer.getData('text/plain'),b.dataset.proj)};
+  });
+  document.querySelectorAll('[data-personnav]').forEach(b=>{
+    b.onclick=()=>{state.view='personas';state.person=b.dataset.personnav;state.proj=null;state.sel=null;closeSidebar();render()};
+    b.ondragover=e=>{e.preventDefault();b.classList.add('navdrop')};
+    b.ondragleave=()=>b.classList.remove('navdrop');
+    b.ondrop=e=>{e.preventDefault();b.classList.remove('navdrop');assignTaskPerson(e.dataTransfer.getData('text/plain'),b.dataset.personnav)};
+  });
   const np=document.getElementById('newProj');if(np)np.onclick=createProject;
   const npe=document.getElementById('newPerson');if(npe)npe.onclick=createPerson;
 }
@@ -625,7 +638,7 @@ function renderList(){
 
 function taskRow(t){
   const tp=typeOf(t.type);const dCls=t.due&&daysFrom(t.due)===0?'today':'';const sup=!isMine(t);
-  return `<div class="task ${isDone(t)?'done':''} ${state.sel===t.id?'sel':''}" data-id="${t.id}">
+  return `<div class="task ${isDone(t)?'done':''} ${state.sel===t.id?'sel':''}" data-id="${t.id}" draggable="true">
     <button class="check ${isDone(t)?'on':''}" data-check="${t.id}">${svg(I.check,11)}</button>
     <div class="t-body">
       <div class="t-title">${escapeH(t.title)}</div>
@@ -650,7 +663,7 @@ function renderSeguimientos(){
   let list=applyFilters(TASKS.filter(t=>isOpen(t)&&(t.type==='seguimiento'||t.status==='esperando'))).sort(byDate);
   if(!list.length)return emptyState('Sin seguimientos','Convierte un tema en seguimiento cuando dependa de otra persona.');
   return list.map(t=>{const ch=CHANNELS.find(c=>c.id===t.channel);
-    return `<div class="task ${state.sel===t.id?'sel':''}" data-id="${t.id}">
+    return `<div class="task ${state.sel===t.id?'sel':''}" data-id="${t.id}" draggable="true">
       <button class="check ${isDone(t)?'on':''}" data-check="${t.id}">${svg(I.check,11)}</button>
       <div class="t-body"><div class="t-title">${escapeH(t.title)}</div>
         <div class="t-meta">
@@ -773,15 +786,18 @@ function inlineAdd(el){
   inp.onblur=()=>fin(true);
 }
 function quickAddBoard(text,drop){
-  const s=suggest(text);
-  let title=text.replace(/\b(hoy|mañana|manana|pasado mañana|esta semana)\b/gi,'').replace(/\s{2,}/g,' ').trim();
-  title=title.charAt(0).toUpperCase()+title.slice(1);
-  const resp=s.person||'Yo';
   const due=drop==='none'?'':(drop||addD(7));
-  const t={id:uid(),title,description:'',project:s.project,type:'tarea',flag:false,
-    status:(resp&&!/^(yo|mau|mauricio)$/i.test(resp))?'esperando':'no_iniciado',createdAt:todayStr(),due,nextReview:'',
-    responsible:resp,relatedPerson:'',channel:'',nextAction:'',notes:[],links:'',completedAt:'',lastContact:'',carried:0,history:[{d:todayStr(),t:'Creada'}]};
-  TASKS.unshift(t);save();render();toast('Tarea creada');
+  const parts=text.split(',').map(x=>x.trim()).filter(Boolean);
+  let count=0;
+  parts.forEach(part=>{const s=suggest(part);
+    let title=part.replace(/\b(hoy|mañana|manana|pasado mañana|esta semana)\b/gi,'').replace(/\s{2,}/g,' ').trim();
+    if(!title)return;title=title.charAt(0).toUpperCase()+title.slice(1);
+    const resp=s.person||'Yo';
+    const t={id:uid(),title,description:'',project:s.project,type:'tarea',flag:false,
+      status:(resp&&!/^(yo|mau|mauricio)$/i.test(resp))?'esperando':'no_iniciado',createdAt:todayStr(),due,nextReview:'',
+      responsible:resp,relatedPerson:'',channel:'',nextAction:'',notes:[],links:'',completedAt:'',lastContact:'',carried:0,history:[{d:todayStr(),t:'Creada'}]};
+    TASKS.unshift(t);count++});
+  save();render();toast(count>1?`${count} tareas creadas`:'Tarea creada');
 }
 
 /* ---- CALENDARIO: tablero semanal arrastrable ---- */
@@ -935,10 +951,16 @@ function createProject(){const name=prompt('Nombre del nuevo proyecto:');if(!nam
 function deleteProject(id){if(id==='general'){toast('No se puede eliminar General');return}const p=proj(id);const n=TASKS.filter(t=>t.project===id).length;if(!confirm(`¿Eliminar el proyecto "${p.name}"?`+(n?`\nSus ${n} tarea(s) pasarán a General.`:'')))return;TASKS.forEach(t=>{if(t.project===id){t.project='general';logH(t,'Proyecto eliminado → General')}});PROJECTS=PROJECTS.filter(x=>x.id!==id);if(state.proj===id){state.proj=null;state.view='hoy'}save();render();toast('Proyecto eliminado')}
 function createPerson(){const name=prompt('Nombre de la nueva persona:');if(!name||!name.trim())return;const nm=name.trim();if(/^(yo|mau|mauricio)$/i.test(nm)){toast('Ya existe Yo');return}if(!allPeople().includes(nm))PEOPLE.push(nm);save();state.view='personas';state.person=nm;state.proj=null;state.sel=null;closeSidebar();render();toast('Persona agregada')}
 function deletePerson(name){if(normPerson(name)==='Yo'){toast('No puedes eliminarte');return}const n=TASKS.filter(t=>normPerson(t.responsible)===name).length;if(!confirm(`¿Eliminar a "${name}"?`+(n?`\nSus ${n} tarea(s) pasarán a ti (Yo).`:'')))return;TASKS.forEach(t=>{if(normPerson(t.responsible)===name){t.responsible='Yo';logH(t,'Responsable eliminado → Yo')}});PEOPLE=PEOPLE.filter(x=>x!==name);if(state.person===name){state.person=null;state.view='hoy'}save();render();toast('Persona eliminada')}
+function assignTaskProject(id,pid){const t=TASKS.find(x=>x.id===id);if(!t||t.project===pid)return;t.project=pid;logH(t,'Movida a '+projName(pid));save();render();toast('→ '+projName(pid))}
+function assignTaskPerson(id,name){const t=TASKS.find(x=>x.id===id);if(!t)return;const nm=normPerson(name);if(normPerson(t.responsible)===nm)return;t.responsible=nm;if(nm!=='Yo'&&t.status==='no_iniciado')t.status='esperando';logH(t,'Responsable: '+nm);save();render();toast('Asignada a '+nm)}
 
 /* ---- BIND LISTAS ---- */
 function bindTasks(){
-  document.querySelectorAll('.task[data-id]').forEach(row=>row.onclick=(e)=>{if(e.target.closest('[data-check]')||e.target.closest('[data-act]'))return;select(row.dataset.id)});
+  document.querySelectorAll('.task[data-id]').forEach(row=>{
+    row.onclick=(e)=>{if(e.target.closest('[data-check]')||e.target.closest('[data-act]'))return;select(row.dataset.id)};
+    row.ondragstart=(e)=>{e.dataTransfer.setData('text/plain',row.dataset.id);e.dataTransfer.effectAllowed='move';row.classList.add('dragging')};
+    row.ondragend=()=>row.classList.remove('dragging');
+  });
   document.querySelectorAll('[data-check]').forEach(c=>c.onclick=(e)=>{e.stopPropagation();const wasOpen=!isDone(TASKS.find(x=>x.id===c.dataset.check));toggleComplete(c.dataset.check);render();if(wasOpen)toast('Realizada ✓')});
   document.querySelectorAll('[data-act]').forEach(btn=>btn.onclick=(e)=>{e.stopPropagation();const id=btn.dataset.id,a=btn.dataset.act;
     if(a==='snooze'){snooze(id);render();toast('Pasada a mañana')}
@@ -974,12 +996,19 @@ function openModal(prefill={}){
 }
 function closeModal(){document.getElementById('overlay').classList.remove('show')}
 function saveModal(){
-  const title=document.getElementById('mTitle').value.trim();if(!title){closeModal();return}
+  const raw=document.getElementById('mTitle').value.trim();if(!raw){closeModal();return}
   let resp=document.getElementById('mResp').value;if(resp==='__new__'||!resp)resp='Yo';
-  const t={id:uid(),title,description:document.getElementById('mDesc').value.trim(),project:document.getElementById('mProject').value,type:'tarea',flag:modalFlag,
-    status:(!/^(yo|mau|mauricio)$/i.test(resp))?'esperando':'no_iniciado',createdAt:todayStr(),due:document.getElementById('mDue').value,nextReview:'',
-    responsible:resp,relatedPerson:'',channel:'',nextAction:document.getElementById('mNext').value.trim(),notes:[],links:'',completedAt:'',lastContact:'',carried:0,history:[{d:todayStr(),t:'Creada'}]};
-  TASKS.unshift(t);save();closeModal();state.sel=t.id;render();toast('Tarea creada')}
+  const project=document.getElementById('mProject').value,due=document.getElementById('mDue').value;
+  const desc=document.getElementById('mDesc').value.trim(),na=document.getElementById('mNext').value.trim();
+  const titles=raw.split(',').map(x=>x.trim()).filter(Boolean);
+  const st=(!/^(yo|mau|mauricio)$/i.test(resp))?'esperando':'no_iniciado';
+  const created=[];
+  titles.forEach(title=>{const t={id:uid(),title,description:desc,project,type:'tarea',flag:modalFlag,
+    status:st,createdAt:todayStr(),due,nextReview:'',responsible:resp,relatedPerson:'',channel:'',nextAction:na,notes:[],links:'',completedAt:'',lastContact:'',carried:0,history:[{d:todayStr(),t:'Creada'}]};
+    TASKS.unshift(t);created.push(t)});
+  if(!created.length){closeModal();return}
+  save();closeModal();state.sel=created[0].id;render();
+  toast(created.length>1?`${created.length} tareas creadas`:'Tarea creada')}
 
 /* ---- CAPTURA RÁPIDA ---- */
 function quickAdd(text){const s=suggest(text);
