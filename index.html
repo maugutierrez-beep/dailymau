@@ -723,7 +723,6 @@ function taskRow(t){
       <div class="t-title">${escapeH(t.title)}</div>
       ${t.description?`<div class="t-desc">${escapeH(t.description)}</div>`:''}
       <div class="t-meta">
-        ${t.carried>0&&isOpen(t)?`<span class="carried">${svg(I.loop,11)} arrastrada ${t.carried}d</span>`:''}
         <span class="tag tag-proj"><span style="width:7px;height:7px;border-radius:50%;background:${proj(t.project).color}"></span>${projName(t.project)}</span>
         ${t.due?`<span class="due ${dCls}">${svg(I.clock,11)} ${dueLabel(t.due)}</span>`:''}
         ${sup?`<span class="who sup"><span class="av" style="background:${colorFor(t.responsible)}">${initials(t.responsible)}</span>${escapeH(normPerson(t.responsible)||'(sin asignar)')}</span>`:''}
@@ -849,7 +848,6 @@ function dayRow(t){const sup=!isMine(t);
     <button class="check" data-check="${t.id}">${svg(I.check,11)}</button>
     <div class="drow-main"><span class="t-title">${escapeH(t.title)}</span>${t.nextAction?`<span class="drow-na">${svg(I.arrow,10)} ${escapeH(t.nextAction)}</span>`:''}</div>
     <div class="drow-side">
-      ${t.carried>0?`<span class="carried">${svg(I.loop,11)} ${t.carried}d</span>`:''}
       ${sup?`<span class="drow-resp"><span class="av" style="background:${colorFor(t.responsible)}">${initials(t.responsible)}</span>${escapeH(normPerson(t.responsible))}</span>`:''}
       <span class="row-actions"><button class="ra" data-act="snooze" data-id="${t.id}" title="Mañana">${svg(I.snooze,16)}</button><button class="ra" data-act="someday" data-id="${t.id}" title="En un futuro">${svg(I.fwd,16)}</button></span>
     </div>
@@ -895,7 +893,7 @@ function acard(t,colKey){const sup=!isMine(t);
     <div style="flex:1;min-width:0">
       <div class="crumb"><span class="cd" style="background:${proj(t.project).color}"></span>Listas › ${projName(t.project)}</div>
       <div class="a-title">${escapeH(t.title)}</div>
-      ${t.carried>0?`<div class="a-due" style="color:var(--amber)">↻ arrastrada ${t.carried}d</div>`:(colKey==='up'&&t.due?`<div class="a-due">${dueLabel(t.due)}</div>`:'')}
+      ${colKey==='up'&&t.due?`<div class="a-due">${dueLabel(t.due)}</div>`:''}
       ${sup?`<div class="who2"><span class="av" style="background:${colorFor(t.responsible)}">${initials(t.responsible)}</span>${escapeH(normPerson(t.responsible))}</div>`:''}
     </div>
   </div>`;
@@ -1048,7 +1046,7 @@ function renderDetail(){
         <button class="dbtn" data-d="delegate">${svg(I.delegate,14)} Asignar</button>
         <button class="dbtn del" data-d="delete">${svg(I.trash,14)} Eliminar</button>
       </div>
-      <div class="det-section"><div class="det-label">Historial</div>${(t.history||[]).slice().reverse().map(h=>`<div class="hist"><span class="hd">${h.d}</span><span>${escapeH(h.t)}</span></div>`).join('')}<div class="hist" style="margin-top:6px"><span class="hd">Creada</span><span>${t.createdAt}${t.carried>0?` · arrastrada ${t.carried}d`:''}</span></div></div>
+      <div class="det-section"><div class="det-label">Historial</div>${(t.history||[]).slice().reverse().map(h=>`<div class="hist"><span class="hd">${h.d}</span><span>${escapeH(h.t)}</span></div>`).join('')}<div class="hist" style="margin-top:6px"><span class="hd">Creada</span><span>${t.createdAt}</span></div></div>
     </div>`;
   bindDetail(t);
 }
