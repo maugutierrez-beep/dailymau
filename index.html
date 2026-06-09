@@ -556,7 +556,9 @@ function renderNav(){
   }
   h+=secHeader('Personas','personas');
   if(!COLLAPSE.personas){
-    allPeople().forEach(n=>{const op=TASKS.filter(t=>isOpen(t)&&(normPerson(t.responsible)||'(sin asignar)')===n).length;const a=state.view==='personas'&&state.person===n;
+    allPeople().map(n=>({n,op:TASKS.filter(t=>isOpen(t)&&(normPerson(t.responsible)||'(sin asignar)')===n).length}))
+      .sort((a,b)=>b.op-a.op)
+      .forEach(({n,op})=>{const a=state.view==='personas'&&state.person===n;
       h+=`<button class="nav-item ${a?'active':''}" data-personnav="${escapeAttr(n)}"><span class="av-sm" style="background:${colorFor(n)}">${initials(n)}</span><span style="flex:1">${n==='Yo'?'Yo':escapeH(n)}</span>${op?`<span class="count">${op}</span>`:''}</button>`});
     h+=`<button class="nav-item nav-add" id="newPerson"><span class="ico">${svg('<path d="M12 5v14M5 12h14"/>',15)}</span>Nueva persona</button>`;
   }
