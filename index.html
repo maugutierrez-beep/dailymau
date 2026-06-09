@@ -531,7 +531,7 @@ function showError(msg){document.getElementById('loginError').textContent=typeof
 async function handleLogin(){const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPass').value;if(!e||!p){showError('Ingresa correo y contraseña');return}document.getElementById('loginBtn').textContent='Ingresando…';try{await signIn(e,p);startApp()}catch(x){showError(x)}document.getElementById('loginBtn').textContent='Iniciar sesión'}
 async function handleSignup(){const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPass').value;if(!e||!p){showError('Ingresa correo y contraseña');return}if(p.length<6){showError('Mínimo 6 caracteres en la contraseña');return}document.getElementById('signupBtn').textContent='Creando…';try{const d=await signUp(e,p);if(d.access_token)startApp();else showError('Revisa tu correo para confirmar la cuenta')}catch(x){showError(x)}document.getElementById('signupBtn').textContent='Crear cuenta'}
 
-const CLOUD={url:'https://cwqenbkjvuqtaynxpomq.supabase.co',key:'sb_publishable_WGdKp8XsGWxV0hy-qNZ7-g_X_KMfGYR',table:'dailymau_db',row:'main'};
+const CLOUD={url:'https://cwqenbkjvuqtaynxpomq.supabase.co',key:'sb_publishable_WGdKp8XsGWxV0hy-qNZ7-g_X_KMfGYR',table:'dailymau_db',row:'v3'};
 let cloudReady=false,saveT=null;
 function serialize(){return JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE})}
 function applyParsed(p){if(Array.isArray(p)){TASKS=p;return p.length>0}if(p&&Array.isArray(p.tasks)){TASKS=p.tasks;if(Array.isArray(p.projects)&&p.projects.length)PROJECTS=p.projects;if(Array.isArray(p.people))PEOPLE=p.people;return p.tasks.length>0}return false}
