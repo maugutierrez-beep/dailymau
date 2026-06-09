@@ -860,7 +860,7 @@ function followupText(person){
   const hr=new Date().getHours();const g=hr<12?'buenos días':hr<19?'buenas tardes':'buenas noches';
   let txt=`Hola ${first}, ${g}.\n\nTenemos pendientes las siguientes tareas:\n\n`;
   if(!tasks.length)txt+='(Sin tareas pendientes registradas por ahora.)\n';
-  else tasks.forEach((t,i)=>{txt+=`${i+1}. ${t.title}`;if(t.due){txt+=` (${dueLabel(t.due)})`}if(t.nextAction)txt+=` — ${t.nextAction}`;txt+='\n'});
+  else tasks.forEach((t,i)=>{txt+=`${i+1}. ${t.title}`;if(t.nextAction)txt+=` — ${t.nextAction}`;txt+='\n'});
   txt+=`\n¿Me confirmas cómo vamos con estos temas? Quedo atento. ¡Gracias!`;
   return txt;
 }
