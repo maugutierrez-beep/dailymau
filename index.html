@@ -561,19 +561,12 @@ async function cloudLoad(){
     let ct=[],cp=[],cpe=[];
     if(Array.isArray(p))ct=p;
     else if(p&&Array.isArray(p.tasks)){ct=p.tasks;cp=p.projects||[];cpe=p.people||[]}
-    if(!ct.length&&!TASKS.length)return null;
-    const m=mergeData({tasks:TASKS,projects:PROJECTS,people:PEOPLE},{tasks:ct,projects:cp,people:cpe});
-    TASKS=m.tasks;if(m.projects.length)PROJECTS=m.projects;if(m.people.length)PEOPLE=[...m.people];
+    if(!ct.length)return null;
+    TASKS=ct;if(cp.length)PROJECTS=cp;if(cpe.length)PEOPLE=cpe;
     saveLocal();return true;
   }catch(e){return false}}
 async function cloudSave(){if(!cloudReady)return;setCloud('saving');
-  try{
-    try{const r2=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}&select=data`,{headers:hGet()});
-      if(r2.ok){const j2=await r2.json();if(j2&&j2[0]&&j2[0].data){const p2=typeof j2[0].data==='string'?JSON.parse(j2[0].data):j2[0].data;
-        let ct=[],cp=[],cpe=[];if(Array.isArray(p2))ct=p2;else if(p2&&Array.isArray(p2.tasks)){ct=p2.tasks;cp=p2.projects||[];cpe=p2.people||[]}
-        const m=mergeData({tasks:TASKS,projects:PROJECTS,people:PEOPLE},{tasks:ct,projects:cp,people:cpe});
-        TASKS=m.tasks;if(m.projects.length)PROJECTS=m.projects;if(m.people.length)PEOPLE=[...m.people];saveLocal()}}}catch(e){}
-    const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',headers:{...hGet(),'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({data:serialize(),updated_at:new Date().toISOString()})});
+  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',headers:{...hGet(),'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({data:serialize(),updated_at:new Date().toISOString()})});
     setCloud(r.ok?'saved':'error')}catch(e){setCloud('error')}}
 function flushSave(){if(!cloudReady)return;clearTimeout(saveT);
   try{fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',
