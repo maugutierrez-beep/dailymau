@@ -335,6 +335,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .cloud-dot.saving{background:var(--amber);animation:pulse 1s infinite}
 .cloud-dot.err{background:var(--red)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.day-greeting{font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--ink);padding:8px 4px 2px;letter-spacing:-.01em}
 .day-summary{font-family:var(--font-display);font-size:16px;color:var(--ink-2);padding:6px 4px 4px}
 .day-summary b{color:var(--ink);font-weight:600}
 .day-bring{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:8px 13px;border-radius:9px;margin:8px 0 6px}
@@ -530,6 +531,9 @@ function scheduleRefreshToken(){const ms=SESSION&&SESSION.expires_in?(SESSION.ex
 function showError(msg){document.getElementById('loginError').textContent=typeof msg==='string'?msg:(msg&&msg.message?msg.message:'Error')}
 async function handleLogin(){const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPass').value;if(!e||!p){showError('Ingresa correo y contraseña');return}document.getElementById('loginBtn').textContent='Ingresando…';try{await signIn(e,p);startApp()}catch(x){showError(x)}document.getElementById('loginBtn').textContent='Iniciar sesión'}
 async function handleSignup(){const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPass').value;if(!e||!p){showError('Ingresa correo y contraseña');return}if(p.length<6){showError('Mínimo 6 caracteres en la contraseña');return}document.getElementById('signupBtn').textContent='Creando…';try{const d=await signUp(e,p);if(d.access_token)startApp();else showError('Revisa tu correo para confirmar la cuenta')}catch(x){showError(x)}document.getElementById('signupBtn').textContent='Crear cuenta'}
+
+function getUserName(){try{const t=SESSION&&SESSION.access_token;if(!t)return '';const p=JSON.parse(atob(t.split('.')[1]));const m=p.user_metadata||{};if(m.full_name)return m.full_name.split(/\s+/)[0];if(m.name)return m.name.split(/\s+/)[0];const e=p.email||'';return e.split('@')[0].replace(/[._]/g,' ').split(' ')[0].replace(/^\w/,c=>c.toUpperCase())}catch(e){return ''}}
+function greeting(){const h=new Date().getHours();const n=getUserName();const g=h<12?'Buenos días':h<19?'Buenas tardes':'Buenas noches';return n?g+', '+n+'!':g+'!'}
 
 const CLOUD={url:'https://cwqenbkjvuqtaynxpomq.supabase.co',key:'sb_publishable_WGdKp8XsGWxV0hy-qNZ7-g_X_KMfGYR',table:'dailymau_db',row:'main'};
 let cloudReady=false,saveT=null;
@@ -891,7 +895,8 @@ function bindProjects(){document.querySelectorAll('[data-pid]').forEach(c=>c.onc
 function renderDay(){
   const today=TASKS.filter(t=>isOpen(t)&&t.due&&daysFrom(t.due)<=0);
   const tmr=TASKS.filter(t=>isOpen(t)&&t.due===addD(1)).length;
-  let h=`<div class="day-summary">${today.length?`Tienes <b>${today.length}</b> tarea(s) para hoy.`:'No tienes tareas para hoy.'}</div>`;
+  let h=`<div class="day-greeting">${greeting()}</div>`;
+  h+=`<div class="day-summary">${today.length?`Tienes <b>${today.length}</b> tarea(s) para hoy.`:'No tienes tareas para hoy.'}</div>`;
   if(tmr)h+=`<button class="day-bring" id="bringT">${svg(I.arrow,14)} Traer ${tmr} de mañana a hoy</button>`;
   if(!today.length)return h+`<div class="empty" style="padding:30px 20px"><h3>Día libre</h3><p>Agrega tareas o trae las de mañana.</p></div>`;
   const byproj={};today.forEach(t=>{(byproj[t.project]=byproj[t.project]||[]).push(t)});
