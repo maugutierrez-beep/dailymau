@@ -312,6 +312,14 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .cloud-dot.saving{background:var(--amber);animation:pulse 1s infinite}
 .cloud-dot.err{background:var(--red)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.day-summary{font-family:var(--font-display);font-size:16px;color:var(--ink-2);padding:6px 4px 4px}
+.day-summary b{color:var(--ink);font-weight:600}
+.day-bring{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:8px 13px;border-radius:9px;margin:8px 0 6px}
+.day-bring:hover{filter:brightness(.97)}
+.day-bring svg{width:14px;height:14px}
+.day-group{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:20px 4px 8px}
+.dg-dot{width:8px;height:8px;border-radius:50%}
+.dg-c{color:var(--ink-3)}
 .task[draggable]{cursor:grab}
 .task.dragging{opacity:.4}
 .nav-item.navdrop{background:var(--accent-soft)!important;outline:2px dashed var(--accent);outline-offset:-2px;color:var(--accent)}
@@ -403,7 +411,7 @@ const TYPES=[{id:'tarea',name:'Tarea',ic:'check'},{id:'seguimiento',name:'Seguim
 const STATUSES=[{id:'no_iniciado',name:'No iniciado'},{id:'en_proceso',name:'En proceso'},{id:'esperando',name:'Esperando respuesta'},{id:'pospuesto',name:'Arrastrado'},{id:'completado',name:'Realizado'},{id:'cancelado',name:'Cancelado'}];
 const CHANNELS=[{id:'',name:'—'},{id:'whatsapp',name:'WhatsApp'},{id:'correo',name:'Correo'},{id:'llamada',name:'Llamada'},{id:'reunion',name:'Reunión'}];
 const VIEWS=[
-  {id:'hoy',name:'Tareas',ic:'sun'},{id:'realizadas',name:'Realizadas',ic:'check'},{id:'todas',name:'Todas',ic:'list'},
+  {id:'dia',name:'Mi día',ic:'sun'},{id:'hoy',name:'Tareas',ic:'grid'},{id:'realizadas',name:'Realizadas',ic:'check'},{id:'todas',name:'Todas',ic:'list'},
   {id:'personas',name:'Personas',ic:'users'},{id:'seguimientos',name:'Seguimientos',ic:'loop'},
   {id:'inbox',name:'Inbox',ic:'inbox'},{id:'calendario',name:'Calendario',ic:'cal'},
   {id:'revision',name:'Revisión diaria',ic:'sparkle'},
@@ -429,10 +437,11 @@ const I={
   delegate:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/>',
   layers:'<path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
   list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
 };
 const svg=(p,w=16)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="${w}" height="${w}">${p}</svg>`;
 
-let TASKS=[],PEOPLE=[],state={view:'hoy',sel:null,filter:{},search:'',proj:null,person:null,revMode:'am',showDone:false};
+let TASKS=[],PEOPLE=[],state={view:'dia',sel:null,filter:{},search:'',proj:null,person:null,revMode:'am',showDone:false};
 const KEY='dailymau_tasks_v1';
 function localISO(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 const todayStr=()=>localISO(new Date());
@@ -545,7 +554,7 @@ function toggleCollapse(k){COLLAPSE[k]=!COLLAPSE[k];try{localStorage.setItem('da
 function secHeader(label,key){const open=!COLLAPSE[key];return `<button class="nav-sec-toggle" data-collapse="${key}"><span>${label}</span><svg class="chev ${open?'open':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>`}
 function renderNav(){
   let h=`<div class="nav-section">Vistas</div>`;
-  h+=navItem(VIEWS.find(v=>v.id==='hoy'))+navItem(VIEWS.find(v=>v.id==='realizadas'));
+  h+=navItem(VIEWS.find(v=>v.id==='dia'))+navItem(VIEWS.find(v=>v.id==='hoy'))+navItem(VIEWS.find(v=>v.id==='realizadas'));
   h+=secHeader('Proyectos','proyectos');
   if(!COLLAPSE.proyectos){
     PROJECTS.map(p=>({p,open:TASKS.filter(t=>t.project===p.id&&isOpen(t)).length}))
@@ -588,14 +597,15 @@ function navItem(v,count){const a=state.view===v.id;return `<button class="nav-i
 function go(v){state.view=v;state.proj=null;state.person=null;state.sel=null;state.filter={};closeSidebar();render()}
 function render(){
   renderNav();updatePeopleList();
-  const titles={hoy:['Tareas',fmtDate()],realizadas:['Realizadas','Historial de lo completado'],todas:['Todas las pendientes','Vista consolidada por proyecto'],personas:['Personas','Tareas propias y supervisadas'],seguimientos:['Seguimientos','Temas que dependen de otros'],inbox:['Inbox','Captura rápida sin clasificar'],calendario:['Calendario','Tareas por fecha'],revision:['Revisión diaria','Inicio y cierre del día'],proyectos:[state.proj?projName(state.proj):'Proyectos','']};
+  const titles={dia:['Mi día',fmtDate()],hoy:['Tareas',fmtDate()],realizadas:['Realizadas','Historial de lo completado'],todas:['Todas las pendientes','Vista consolidada por proyecto'],personas:['Personas','Tareas propias y supervisadas'],seguimientos:['Seguimientos','Temas que dependen de otros'],inbox:['Inbox','Captura rápida sin clasificar'],calendario:['Calendario','Tareas por fecha'],revision:['Revisión diaria','Inicio y cierre del día'],proyectos:[state.proj?projName(state.proj):'Proyectos','']};
   let [title,sub]=titles[state.view]||['',''];
   if(state.view==='personas'&&state.person){title=state.person==='Yo'?'Mis tareas':state.person;sub=state.person==='Yo'?'Pendientes a tu cargo':'Tareas que supervisas'}
   document.getElementById('viewTitle').textContent=title;
   document.getElementById('eyebrow').textContent=state.view==='proyectos'?'Proyecto':(state.view==='personas'&&state.person?'Persona':title);
   document.getElementById('viewSub').textContent=sub;
   const scroll=document.getElementById('scroll'),fbar=document.getElementById('filters');fbar.style.display='none';
-  if(state.view==='hoy'){scroll.innerHTML=renderBoard();bindBoard()}
+  if(state.view==='dia'){scroll.innerHTML=renderDay();bindTasks();const bt=document.getElementById('bringT');if(bt)bt.onclick=bringTomorrow}
+  else if(state.view==='hoy'){scroll.innerHTML=renderBoard();bindBoard()}
   else if(state.view==='realizadas'){scroll.innerHTML=renderDone();bindTasks()}
   else if(state.view==='calendario'){scroll.innerHTML=renderCalendar();bindMini()}
   else if(state.view==='revision'){scroll.innerHTML=renderReview();bindReview()}
@@ -768,6 +778,32 @@ function renderProjects(){
     <div class="proj-stats"><span><b>${open.length}</b> activos</span><span><b>${done.length}</b> hechos</span></div></div>`}).join('')+`</div>`;
 }
 function bindProjects(){document.querySelectorAll('[data-pid]').forEach(c=>c.onclick=()=>{state.view='proyectos';state.proj=c.dataset.pid;render()})}
+
+/* ---- MI DÍA: listado consolidado del día ---- */
+function renderDay(){
+  const today=TASKS.filter(t=>isOpen(t)&&t.due&&daysFrom(t.due)<=0);
+  const tmr=TASKS.filter(t=>isOpen(t)&&t.due===addD(1)).length;
+  let h=`<div class="day-summary">${today.length?`Tienes <b>${today.length}</b> tarea(s) para hoy.`:'No tienes tareas para hoy.'}</div>`;
+  if(tmr)h+=`<button class="day-bring" id="bringT">${svg(I.arrow,14)} Traer ${tmr} de mañana a hoy</button>`;
+  if(!today.length)return h+`<div class="empty" style="padding:30px 20px"><h3>Día libre</h3><p>Agrega tareas o trae las de mañana.</p></div>`;
+  const byproj={};today.forEach(t=>{(byproj[t.project]=byproj[t.project]||[]).push(t)});
+  const order=Object.keys(byproj).sort((a,b)=>byproj[b].length-byproj[a].length);
+  order.forEach(pid=>{h+=`<div class="day-group"><span class="dg-dot" style="background:${proj(pid).color}"></span>${escapeH(projName(pid))} <span class="dg-c">${byproj[pid].length}</span></div>`+byproj[pid].sort(byDate).map(dayRow).join('')});
+  return h;
+}
+function dayRow(t){const sup=!isMine(t);
+  return `<div class="task" data-id="${t.id}" draggable="true">
+    <button class="check" data-check="${t.id}">${svg(I.check,11)}</button>
+    <div class="t-body"><div class="t-title">${escapeH(t.title)}</div>
+      <div class="t-meta">
+        ${t.carried>0?`<span class="carried">${svg(I.loop,11)} arrastrada ${t.carried}d</span>`:''}
+        ${sup?`<span class="who sup"><span class="av" style="background:${colorFor(t.responsible)}">${initials(t.responsible)}</span>${escapeH(normPerson(t.responsible))}</span>`:''}
+        ${t.nextAction?`<span class="who" style="color:var(--gold)">${svg(I.arrow,11)} ${escapeH(t.nextAction)}</span>`:''}
+      </div></div>
+    <div class="row-actions"><button class="ra" data-act="snooze" data-id="${t.id}" title="Pasar a mañana">${svg(I.snooze,14)}</button></div>
+  </div>`;
+}
+function bringTomorrow(){const tmr=addD(1);let n=0;TASKS.forEach(t=>{if(isOpen(t)&&t.due===tmr){t.due=todayStr();t.carried=0;if(t.status==='pospuesto')t.status='no_iniciado';logH(t,'Adelantada a hoy');n++}});if(n){save();render();toast(n+' traídas a hoy')}}
 
 /* ---- TABLERO PRINCIPAL estilo Any.do ---- */
 const PLUS=svg('<path d="M12 5v14M5 12h14"/>',15);
