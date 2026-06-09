@@ -600,7 +600,7 @@ function render(){
   else if(state.view==='calendario'){scroll.innerHTML=renderCalendar();bindMini()}
   else if(state.view==='revision'){scroll.innerHTML=renderReview();bindReview()}
   else if(state.view==='personas'&&!state.person){scroll.innerHTML=renderPeople();bindPeople()}
-  else if(state.view==='personas'&&state.person){scroll.innerHTML=renderPersonView();bindTasks();const db=document.querySelector('[data-delperson]');if(db)db.onclick=()=>deletePerson(db.dataset.delperson)}
+  else if(state.view==='personas'&&state.person){scroll.innerHTML=renderPersonView();bindTasks();const db=document.querySelector('[data-delperson]');if(db)db.onclick=()=>deletePerson(db.dataset.delperson);const ap=document.querySelector('[data-addperson]');if(ap)ap.onclick=()=>inlineAddPerson(ap)}
   else if(state.view==='proyectos'&&!state.proj){scroll.innerHTML=renderProjects();bindProjects()}
   else if(state.view==='proyectos'&&state.proj){scroll.innerHTML=renderProjectView();bindTasks();const db=document.querySelector('[data-delproj]');if(db)db.onclick=()=>deleteProject(db.dataset.delproj)}
   else if(state.view==='todas'){scroll.innerHTML=renderAll();bindTasks()}
@@ -703,7 +703,8 @@ function renderPersonView(){
   let list=applyFilters(TASKS.filter(t=>isOpen(t)&&(normPerson(t.responsible)||'(sin asignar)')===state.person)).sort(byDate);
   let h='';
   if(state.person!=='Yo'&&state.person!=='(sin asignar)')h+=`<div class="proj-toolbar"><button class="del-proj" data-delperson="${escapeAttr(state.person)}">${svg(I.trash,14)} Eliminar persona</button></div>`;
-  h+=list.length?list.map(taskRow).join(''):`<div class="empty" style="padding:40px 20px"><h3>Sin pendientes</h3><p>${state.person==='Yo'?'No tienes tareas asignadas.':escapeH(state.person)+' no tiene tareas asignadas.'}</p></div>`;
+  h+=`<div class="b-add" data-addperson="1" style="margin:0 0 10px">${PLUS}Agregar tarea</div>`;
+  h+=list.length?list.map(taskRow).join(''):`<div class="empty" style="padding:36px 20px"><h3>Sin pendientes</h3><p>${state.person==='Yo'?'No tienes tareas asignadas.':escapeH(state.person)+' no tiene tareas asignadas.'}</p></div>`;
   return h;
 }
 function renderProjectView(){
@@ -990,6 +991,21 @@ function deletePerson(name){if(normPerson(name)==='Yo'){toast('No puedes elimina
 function assignTaskProject(id,pid){const t=TASKS.find(x=>x.id===id);if(!t||t.project===pid)return;t.project=pid;logH(t,'Movida a '+projName(pid));save();render();toast('→ '+projName(pid))}
 function assignTaskPerson(id,name){const t=TASKS.find(x=>x.id===id);if(!t)return;const nm=normPerson(name);if(normPerson(t.responsible)===nm)return;t.responsible=nm;if(nm!=='Yo'&&t.status==='no_iniciado')t.status='esperando';logH(t,'Responsable: '+nm);save();render();toast('Asignada a '+nm)}
 function completeTaskById(id){const t=TASKS.find(x=>x.id===id);if(!t||isDone(t))return;t.status='completado';t.completedAt=todayStr();logH(t,'Realizada');save();render();toast('Realizada ✓')}
+function inlineAddPerson(el){
+  const inp=document.createElement('input');inp.className='b-add-input';inp.placeholder='Tarea para '+(state.person==='Yo'?'ti':state.person)+'… (Enter, comas para varias)';
+  el.replaceWith(inp);inp.focus();let done=false;
+  const fin=c=>{if(done)return;done=true;const v=inp.value.trim();if(c&&v)addTasksForPerson(v);else render()};
+  inp.onkeydown=e=>{if(e.key==='Enter')fin(true);if(e.key==='Escape')fin(false)};
+  inp.onblur=()=>fin(true);
+}
+function addTasksForPerson(text){
+  const resp=state.person==='(sin asignar)'?'(sin asignar)':state.person;
+  const parts=text.split(',').map(x=>x.trim()).filter(Boolean);let count=0;
+  parts.forEach(part=>{const sg=suggest(part);let title=part.replace(/\b(hoy|mañana|manana|pasado mañana|esta semana)\b/gi,'').replace(/\s{2,}/g,' ').trim();if(!title)return;title=title.charAt(0).toUpperCase()+title.slice(1);
+    const t={id:uid(),title,description:'',project:sg.project,type:'tarea',flag:false,status:(resp!=='Yo')?'esperando':'no_iniciado',createdAt:todayStr(),due:sg.due||todayStr(),nextReview:'',responsible:resp,relatedPerson:'',channel:'',nextAction:'',notes:[],links:'',completedAt:'',lastContact:'',carried:0,history:[{d:todayStr(),t:'Creada'}]};
+    TASKS.unshift(t);count++});
+  save();render();toast(count>1?count+' tareas creadas':'Tarea creada');
+}
 
 /* ---- BIND LISTAS ---- */
 function bindTasks(){
