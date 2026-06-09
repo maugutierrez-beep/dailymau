@@ -539,9 +539,13 @@ function renderNav(){
   h+=`<div class="nav-section">Proyectos</div>`;
   PROJECTS.forEach(p=>{const open=TASKS.filter(t=>t.project===p.id&&isOpen(t)).length;const a=state.view==='proyectos'&&state.proj===p.id;
     h+=`<button class="nav-item ${a?'active':''}" data-proj="${p.id}"><span style="width:9px;height:9px;border-radius:50%;background:${p.color}"></span><span style="flex:1">${p.name}</span>${open?`<span class="count">${open}</span>`:''}</button>`});
+  h+=`<div class="nav-section">Personas</div>`;
+  allPeople().forEach(n=>{const op=TASKS.filter(t=>isOpen(t)&&(normPerson(t.responsible)||'(sin asignar)')===n).length;const a=state.view==='personas'&&state.person===n;
+    h+=`<button class="nav-item ${a?'active':''}" data-personnav="${escapeAttr(n)}"><span class="av-sm" style="background:${colorFor(n)}">${initials(n)}</span><span style="flex:1">${n==='Yo'?'Yo':escapeH(n)}</span>${op?`<span class="count">${op}</span>`:''}</button>`});
   document.getElementById('nav').innerHTML=h;
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));
   document.querySelectorAll('[data-proj]').forEach(b=>b.onclick=()=>{state.view='proyectos';state.proj=b.dataset.proj;state.sel=null;state.person=null;closeSidebar();render()});
+  document.querySelectorAll('[data-personnav]').forEach(b=>b.onclick=()=>{state.view='personas';state.person=b.dataset.personnav;state.proj=null;state.sel=null;closeSidebar();render()});
 }
 function navItem(v,count){const a=state.view===v.id;return `<button class="nav-item ${a?'active':''}" data-view="${v.id}"><span class="ico">${svg(I[v.ic],16)}</span><span style="flex:1">${v.name}</span>${count?`<span class="count">${count}</span>`:''}</button>`}
 
