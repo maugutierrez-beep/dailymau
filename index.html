@@ -336,12 +336,9 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
     <div class="modal-b">
       <div class="modal-row">
         <div class="mfield"><label>Proyecto</label><select id="mProject"></select></div>
-        <div class="mfield"><label>Tipo</label><select id="mType"></select></div>
+        <div class="mfield"><label>Responsable</label><select id="mResp"></select></div>
       </div>
-      <div class="modal-row">
-        <div class="mfield"><label>Para el día</label><input type="date" id="mDue"></div>
-        <div class="mfield"><label>Responsable</label><input id="mResp" placeholder="Yo / nombre" list="peopleList"></div>
-      </div>
+      <div class="mfield" style="margin-bottom:10px"><label>Para el día</label><input type="date" id="mDue"></div>
       <div class="mfield" style="margin-bottom:10px"><label>Próxima acción concreta</label><input id="mNext" placeholder="El siguiente paso físico…"></div>
       <textarea id="mDesc" placeholder="Descripción (opcional)"></textarea>
       <datalist id="peopleList"></datalist>
@@ -360,6 +357,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
    Single-file · localStorage · sin dependencias · sin niveles de prioridad
    ============================================================ */
 const PROJECTS=[
+  {id:'general',name:'General',color:'#6b7280'},
   {id:'sierraluna',name:'Sierraluna',color:'#3f7d52'},{id:'gvc',name:'GVC Capital',color:'#1f3a5f'},
   {id:'fnd',name:'FND',color:'#7c5cbf'},{id:'familia',name:'Familia',color:'#c2607a'},
   {id:'salud',name:'Salud',color:'#3f9d9d'},{id:'viajes',name:'Viajes',color:'#d4923e'},
@@ -367,7 +365,7 @@ const PROJECTS=[
   {id:'inversiones',name:'Inversiones',color:'#2d6b8f'},{id:'casa',name:'Casa / Personal',color:'#6b7280'},
   {id:'comunicaciones',name:'Comunicaciones',color:'#a8423a'},{id:'rapidos',name:'Pendientes rápidos',color:'#9a9a93'},
 ];
-const PROJ_SUMMARY={sierraluna:'Desarrollo del condominio campestre y gestión de compradores.',gvc:'Family office: bodegas, fondo Miami y estructura corporativa.',fnd:'Asesoría en migración y frontera para la Federación.',familia:'Martha y los niños; colegio, negocios y bienestar familiar.',salud:'Proyecto de bienestar integral: hábitos, peso y metabolismo.',viajes:'Verano Europa 2026 — logística, presupuesto y reservas.',finanzas:'Portal de inversiones y patrimonio neto consolidado.',juridico:'Documentos corporativos, plusvalía y recursos legales.',inversiones:'Cartera IBKR, cripto y reestructuración de portafolio.',casa:'Inmuebles, mantenimiento y temas personales del hogar.',comunicaciones:'Correos, mensajes y respuestas importantes pendientes.',rapidos:'Tareas sueltas de menos de cinco minutos.'};
+const PROJ_SUMMARY={general:'Tareas generales sin un frente específico.',sierraluna:'Desarrollo del condominio campestre y gestión de compradores.',gvc:'Family office: bodegas, fondo Miami y estructura corporativa.',fnd:'Asesoría en migración y frontera para la Federación.',familia:'Martha y los niños; colegio, negocios y bienestar familiar.',salud:'Proyecto de bienestar integral: hábitos, peso y metabolismo.',viajes:'Verano Europa 2026 — logística, presupuesto y reservas.',finanzas:'Portal de inversiones y patrimonio neto consolidado.',juridico:'Documentos corporativos, plusvalía y recursos legales.',inversiones:'Cartera IBKR, cripto y reestructuración de portafolio.',casa:'Inmuebles, mantenimiento y temas personales del hogar.',comunicaciones:'Correos, mensajes y respuestas importantes pendientes.',rapidos:'Tareas sueltas de menos de cinco minutos.'};
 const TYPES=[{id:'tarea',name:'Tarea',ic:'check'},{id:'seguimiento',name:'Seguimiento',ic:'loop'},{id:'decision',name:'Decisión',ic:'fork'},{id:'recordatorio',name:'Recordatorio',ic:'bell'},{id:'habito',name:'Hábito',ic:'repeat'},{id:'idea',name:'Idea',ic:'bulb'},{id:'riesgo',name:'Riesgo',ic:'warn'}];
 const STATUSES=[{id:'no_iniciado',name:'No iniciado'},{id:'en_proceso',name:'En proceso'},{id:'esperando',name:'Esperando respuesta'},{id:'pospuesto',name:'Arrastrado'},{id:'completado',name:'Realizado'},{id:'cancelado',name:'Cancelado'}];
 const CHANNELS=[{id:'',name:'—'},{id:'whatsapp',name:'WhatsApp'},{id:'correo',name:'Correo'},{id:'llamada',name:'Llamada'},{id:'reunion',name:'Reunión'}];
@@ -471,17 +469,19 @@ function daysFrom(date){if(!date)return null;return Math.round((new Date(date)-n
 function dueLabel(date){const dd=daysFrom(date);if(dd===null)return '';if(dd===0)return 'Hoy';if(dd===-1)return 'Ayer';if(dd<0)return `Hace ${-dd}d`;if(dd===1)return 'Mañana';if(dd<7)return `En ${dd}d`;return new Date(date+'T00:00').toLocaleDateString('es',{day:'numeric',month:'short'})}
 const isDone=(t)=>t.status==='completado';
 const isOpen=(t)=>t.status!=='completado'&&t.status!=='cancelado';
-const isImportant=(t)=>isOpen(t)&&(t.flag||t.type==='riesgo');
+const isImportant=(t)=>isOpen(t)&&t.flag;
 const statusName=(id)=>(STATUSES.find(s=>s.id===id)||{}).name||id;
 function staleDays(t){const last=t.history?.[t.history.length-1]?.d||t.createdAt;return daysFrom(last)!==null?-daysFrom(last):0}
 function normPerson(n){if(!n)return '';const x=n.trim();if(!x)return '';if(/^(yo|mau|mauricio|mauricio gutiérrez|mauricio gutierrez)$/i.test(x))return 'Yo';return x}
 const isMine=(t)=>normPerson(t.responsible)==='Yo';
 function initials(n){const x=normPerson(n);if(!x)return '?';if(x==='Yo')return 'MG';return x.split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase()}
 function colorFor(name){const x=normPerson(name);if(x==='Yo')return 'var(--accent)';let h=0;for(const c of x)h=(h*31+c.charCodeAt(0))%360;return `hsl(${h} 42% 45%)`}
+function allPeople(){const set=new Set();TASKS.forEach(t=>{const p=normPerson(t.responsible);if(p&&p!=='Yo')set.add(p)});return ['Yo',...[...set].sort((a,b)=>a.localeCompare(b))]}
+function peopleOptions(sel){let cur=normPerson(sel)||'Yo';const ppl=allPeople();let opts=ppl.map(n=>`<option value="${escapeAttr(n)}"${n===cur?' selected':''}>${n==='Yo'?'Yo (Mauricio)':escapeH(n)}</option>`).join('');if(cur&&!ppl.includes(cur))opts=`<option value="${escapeAttr(cur)}" selected>${escapeH(cur)}</option>`+opts;opts+=`<option value="__new__">➕ Nuevo responsable…</option>`;return opts}
 
 /* ---- SUGERENCIAS (heurística) ---- */
 function suggest(text){
-  const s=text.toLowerCase();let project='rapidos',type='tarea',due='',flag=false,person='';
+  const s=text.toLowerCase();let project='general',type='tarea',due='',flag=false,person='';
   const map={sierraluna:['sierraluna','lote','comprador','condominio','plusval'],gvc:['gvc','bodega','fondo','jacome','marautos','feasibility'],fnd:['fnd','migra','frontera','decreto','casanare','federaci'],familia:['martha','vicky','victoria','cristy','cristina','benjam','colegio','brownies','familia','niño'],salud:['ozempic','caminadora','peso','salud','ejercicio','dieta','bienestar'],viajes:['viaje','europa','estambul','atenas','mykonos','madrid','hotel','vuelo','avianca','turkish','aegean'],finanzas:['ibkr','portal','patrimonio','trm','saldo','banco'],juridico:['abogado','contrato','jurídic','juridic','recurso','firma','triguvi','escritura','demanda','legal'],inversiones:['acci','goog','amd','tsla','cripto','bitcoin','btc','eth','cartera','portafolio','invertir','vender'],casa:['casa','verona','apartamento','finca','mantenimiento'],comunicaciones:['correo','email','responder','mensaje']};
   for(const[pid,kws]of Object.entries(map)){if(kws.some(k=>s.includes(k))){project=pid;break}}
   if(/urgent|crític|critic|importante|clave|riesgo|no olvidar|ojo/.test(s))flag=true;
@@ -490,7 +490,7 @@ function suggest(text){
   else if(/decidir|decisión|decision|elegir|escoger|evaluar/.test(s))type='decision';
   else if(/recordar|recordatorio|no olvidar/.test(s))type='recordatorio';
   else if(/idea|tal vez|quizá|quiza/.test(s)){type='idea'}
-  else if(/llamar|escribir|responder|enviar/.test(s)&&project==='rapidos')project='comunicaciones';
+  else if(/llamar|escribir|responder|enviar/.test(s)&&project==='general')project='comunicaciones';
   if(/hoy/.test(s))due=todayStr();
   else if(/pasado mañana|pasado manana/.test(s))due=addD(2);
   else if(/mañana|manana/.test(s))due=addD(1);
@@ -550,8 +550,6 @@ function renderFilters(){
   h+=chip('Todos',!f.star&&!f.type,()=>{state.filter={};render()});
   h+=`<span class="chip-sep"></span>`;
   h+=chip('★ Importantes',f.star,()=>{f.star=!f.star;render()},'star');
-  h+=`<span class="chip-sep"></span>`;
-  [['seguimiento','Seguimientos'],['decision','Decisiones'],['riesgo','Riesgos'],['habito','Hábitos'],['idea','Ideas']].forEach(([id,n])=>h+=chip(n,f.type===id,()=>{f.type=f.type===id?null:id;render()}));
   bar.innerHTML=h;bar.querySelectorAll('button').forEach((b,i)=>b.onclick=bar._h[i]);
 }
 function chip(label,on,handler,cls=''){const bar=document.getElementById('filters');(bar._h=bar._h||[]).push(handler);return `<button class="chip ${cls} ${on?'on':''}">${label}</button>`}
@@ -604,7 +602,6 @@ function taskRow(t){
       <div class="t-meta">
         ${t.carried>0&&isOpen(t)?`<span class="carried">${svg(I.loop,11)} arrastrada ${t.carried}d</span>`:''}
         <span class="tag tag-proj"><span style="width:7px;height:7px;border-radius:50%;background:${proj(t.project).color}"></span>${projName(t.project)}</span>
-        ${t.type!=='tarea'?`<span class="t-type">${svg(I[tp.ic],11)} ${tp.name}</span>`:''}
         ${t.due?`<span class="due ${dCls}">${svg(I.clock,11)} ${dueLabel(t.due)}</span>`:''}
         ${sup?`<span class="who sup"><span class="av" style="background:${colorFor(t.responsible)}">${initials(t.responsible)}</span>${escapeH(normPerson(t.responsible)||'(sin asignar)')}</span>`:''}
         ${t.nextAction?`<span class="who" style="color:var(--gold)">${svg(I.arrow,11)} ${escapeH(t.nextAction)}</span>`:''}
@@ -764,8 +761,7 @@ function renderDetail(){
       <div class="det-section"><div class="next-action"><span class="na-ico">${svg(I.arrow,15)}</span><div style="flex:1"><div class="na-l">Próxima acción</div><input id="dNext" value="${escapeAttr(t.nextAction)}" placeholder="¿Cuál es el siguiente paso concreto?"></div></div></div>
       <div class="det-section"><div class="field-grid">
         <div class="field"><label>Proyecto</label><select data-f="project">${opt(PROJECTS,t.project)}</select></div>
-        <div class="field"><label>Tipo</label><select data-f="type">${opt(TYPES,t.type)}</select></div>
-        <div class="field"><label>Responsable</label><input data-f="responsible" value="${escapeAttr(t.responsible)}" list="peopleList"></div>
+        <div class="field"><label>Responsable</label><select data-f="responsible">${peopleOptions(t.responsible)}</select></div>
         <div class="field"><label>Estado</label><select data-f="status">${opt(STATUSES,t.status)}</select></div>
         <div class="field"><label>Para el día</label><input type="date" data-f="due" value="${t.due}"></div>
         <div class="field"><label>Próx. seguimiento</label><input type="date" data-f="nextReview" value="${t.nextReview}"></div>
@@ -791,7 +787,9 @@ function bindDetail(t){
   const dd=document.getElementById('dDesc');az(dd);dd.oninput=()=>{az(dd);t.description=dd.value;save()};
   document.getElementById('dNext').oninput=(e)=>{t.nextAction=e.target.value;save()};document.getElementById('dNext').onblur=()=>render();
   document.getElementById('dStar').onclick=()=>{t.flag=!t.flag;logH(t,t.flag?'Marcada importante':'Quitada de importantes');save();render()};
-  document.querySelectorAll('[data-f]').forEach(el=>el.onchange=()=>{const f=el.dataset.f,old=t[f];t[f]=el.value;
+  document.querySelectorAll('[data-f]').forEach(el=>el.onchange=()=>{const f=el.dataset.f,old=t[f];
+    if(f==='responsible'&&el.value==='__new__'){const n=prompt('Nombre del nuevo responsable:');if(n&&n.trim())t.responsible=n.trim();logH(t,'Responsable: '+valLabel('responsible',old)+' → '+t.responsible);save();render();return}
+    t[f]=el.value;
     if(f==='status'&&el.value==='completado'&&!t.completedAt)t.completedAt=todayStr();
     if(f==='status'&&el.value!=='completado')t.completedAt='';
     logH(t,`${labelF(f)}: ${valLabel(f,old)} → ${valLabel(f,el.value)}`);save();render()});
@@ -838,28 +836,30 @@ function openModal(prefill={}){
   modalFlag=!!prefill.flag;
   document.getElementById('overlay').classList.add('show');
   const sel=(id,arr,val)=>{document.getElementById(id).innerHTML=arr.map(o=>`<option value="${o.id}">${o.name}</option>`).join('');document.getElementById(id).value=val||arr[0].id};
-  sel('mProject',PROJECTS,prefill.project||state.proj||'rapidos');
-  sel('mType',TYPES,prefill.type||'tarea');
+  sel('mProject',PROJECTS,prefill.project||state.proj||'general');
+  const rs=document.getElementById('mResp');
+  const initResp=prefill.person||(state.person&&state.person!=='Yo'?state.person:'Yo');
+  rs.innerHTML=peopleOptions(initResp);
+  rs.onchange=()=>{if(rs.value==='__new__'){const n=prompt('Nombre del nuevo responsable:');if(n&&n.trim()){const o=document.createElement('option');o.value=n.trim();o.textContent=n.trim();rs.insertBefore(o,rs.lastElementChild);rs.value=n.trim()}else rs.value='Yo'}};
   document.getElementById('mTitle').value=prefill.title||'';
   document.getElementById('mDesc').value='';
   document.getElementById('mDue').value=prefill.due||(state.view==='hoy'?todayStr():'');
-  document.getElementById('mResp').value=prefill.person||(state.person&&state.person!=='Yo'?state.person:'Yo');
   document.getElementById('mNext').value='';
   document.getElementById('mStar').classList.toggle('on',modalFlag);
   document.getElementById('mSuggest').innerHTML='';
   setTimeout(()=>document.getElementById('mTitle').focus(),50);
   document.getElementById('mTitle').oninput=(e)=>{const s=suggest(e.target.value);
-    document.getElementById('mProject').value=s.project;document.getElementById('mType').value=s.type;
-    if(s.due)document.getElementById('mDue').value=s.due;if(s.person)document.getElementById('mResp').value=s.person;
+    document.getElementById('mProject').value=s.project;
+    if(s.due)document.getElementById('mDue').value=s.due;
+    if(s.person){const r=document.getElementById('mResp');if(![...r.options].some(o=>o.value===s.person)){const o=document.createElement('option');o.value=s.person;o.textContent=s.person;r.insertBefore(o,r.lastElementChild)}r.value=s.person}
     if(s.flag){modalFlag=true;document.getElementById('mStar').classList.add('on')}
     document.getElementById('mSuggest').innerHTML=`${svg(I.sparkle,14)} ${projName(s.project)}${s.due?' · '+dueLabel(s.due):''}${s.person?' · '+s.person:''}`};
 }
 function closeModal(){document.getElementById('overlay').classList.remove('show')}
 function saveModal(){
   const title=document.getElementById('mTitle').value.trim();if(!title){closeModal();return}
-  const resp=document.getElementById('mResp').value.trim()||'Yo';
-  const type=document.getElementById('mType').value;
-  const t={id:uid(),title,description:document.getElementById('mDesc').value.trim(),project:document.getElementById('mProject').value,type,flag:modalFlag,
+  let resp=document.getElementById('mResp').value;if(resp==='__new__'||!resp)resp='Yo';
+  const t={id:uid(),title,description:document.getElementById('mDesc').value.trim(),project:document.getElementById('mProject').value,type:'tarea',flag:modalFlag,
     status:(!/^(yo|mau|mauricio)$/i.test(resp))?'esperando':'no_iniciado',createdAt:todayStr(),due:document.getElementById('mDue').value,nextReview:'',
     responsible:resp,relatedPerson:'',channel:'',nextAction:document.getElementById('mNext').value.trim(),notes:[],links:'',completedAt:'',lastContact:'',carried:0,history:[{d:todayStr(),t:'Creada'}]};
   TASKS.unshift(t);save();closeModal();state.sel=t.id;render();toast('Tarea creada')}
@@ -869,7 +869,7 @@ function quickAdd(text){const s=suggest(text);
   let title=text.replace(/\b(hoy|mañana|manana|pasado mañana|esta semana)\b/gi,'').replace(/\s{2,}/g,' ').trim();
   title=title.charAt(0).toUpperCase()+title.slice(1);
   const resp=s.person||'Yo';
-  const t={id:uid(),title,description:'',project:s.project,type:s.type,flag:s.flag,
+  const t={id:uid(),title,description:'',project:s.project,type:'tarea',flag:s.flag,
     status:s.person&&!/^(yo|mau|mauricio)$/i.test(s.person)?'esperando':'no_iniciado',createdAt:todayStr(),
     due:s.due||(s.person?'':todayStr()),nextReview:'',responsible:resp,relatedPerson:'',channel:'',nextAction:'',notes:[],links:'',completedAt:'',lastContact:'',carried:0,history:[{d:todayStr(),t:'Captura rápida'}]};
   TASKS.unshift(t);save();render();toast(`Capturado → ${projName(s.project)}${t.due?' · '+dueLabel(t.due):''}${s.person?' · '+s.person:''}`)}
