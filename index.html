@@ -425,7 +425,7 @@ const I={
 };
 const svg=(p,w=16)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="${w}" height="${w}">${p}</svg>`;
 
-let TASKS=[],state={view:'hoy',sel:null,filter:{},search:'',proj:null,person:null,revMode:'am',showDone:false};
+let TASKS=[],PEOPLE=[],state={view:'hoy',sel:null,filter:{},search:'',proj:null,person:null,revMode:'am',showDone:false};
 const KEY='dailymau_tasks_v1';
 const todayStr=()=>new Date().toISOString().slice(0,10);
 const uid=()=>'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -433,8 +433,8 @@ const uid=()=>'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 /* ---- PERSISTENCIA: caché local + nube (Supabase) ---- */
 const CLOUD={url:'https://cwqenbkjvuqtaynxpomq.supabase.co',key:'sb_publishable_WGdKp8XsGWxV0hy-qNZ7-g_X_KMfGYR',table:'dailymau_db',row:'main'};
 let cloudReady=false,saveT=null;
-function serialize(){return JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS})}
-function applyParsed(p){if(Array.isArray(p)){TASKS=p;return p.length>0}if(p&&Array.isArray(p.tasks)){TASKS=p.tasks;if(Array.isArray(p.projects)&&p.projects.length)PROJECTS=p.projects;return p.tasks.length>0}return false}
+function serialize(){return JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE})}
+function applyParsed(p){if(Array.isArray(p)){TASKS=p;return p.length>0}if(p&&Array.isArray(p.tasks)){TASKS=p.tasks;if(Array.isArray(p.projects)&&p.projects.length)PROJECTS=p.projects;if(Array.isArray(p.people))PEOPLE=p.people;return p.tasks.length>0}return false}
 function loadLocal(){try{const r=localStorage.getItem(KEY);if(r){applyParsed(JSON.parse(r));return true}}catch(e){}return false}
 function saveLocal(){try{localStorage.setItem(KEY,serialize())}catch(e){}}
 function save(){saveLocal();scheduleCloud()}
@@ -504,7 +504,7 @@ function normPerson(n){if(!n)return '';const x=n.trim();if(!x)return '';if(/^(yo
 const isMine=(t)=>normPerson(t.responsible)==='Yo';
 function initials(n){const x=normPerson(n);if(!x)return '?';if(x==='Yo')return 'MG';return x.split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase()}
 function colorFor(name){const x=normPerson(name);if(x==='Yo')return 'var(--accent)';let h=0;for(const c of x)h=(h*31+c.charCodeAt(0))%360;return `hsl(${h} 42% 45%)`}
-function allPeople(){const set=new Set();TASKS.forEach(t=>{const p=normPerson(t.responsible);if(p&&p!=='Yo')set.add(p)});return ['Yo',...[...set].sort((a,b)=>a.localeCompare(b))]}
+function allPeople(){const set=new Set(PEOPLE.map(normPerson).filter(x=>x&&x!=='Yo'));TASKS.forEach(t=>{const p=normPerson(t.responsible);if(p&&p!=='Yo')set.add(p)});return ['Yo',...[...set].sort((a,b)=>a.localeCompare(b))]}
 function peopleOptions(sel){let cur=normPerson(sel)||'Yo';const ppl=allPeople();let opts=ppl.map(n=>`<option value="${escapeAttr(n)}"${n===cur?' selected':''}>${n==='Yo'?'Yo (Mauricio)':escapeH(n)}</option>`).join('');if(cur&&!ppl.includes(cur))opts=`<option value="${escapeAttr(cur)}" selected>${escapeH(cur)}</option>`+opts;opts+=`<option value="__new__">➕ Nuevo responsable…</option>`;return opts}
 
 /* ---- SUGERENCIAS (heurística) ---- */
@@ -534,10 +534,11 @@ const addD=(n)=>{const x=new Date();x.setDate(x.getDate()+n);return x.toISOStrin
 /* ---- NAV ---- */
 function renderNav(){
   let h=`<div class="nav-section">Vistas</div>`;
-  h+=navItem(VIEWS.find(v=>v.id==='hoy'))+navItem(VIEWS.find(v=>v.id==='calendario'));
+  h+=navItem(VIEWS.find(v=>v.id==='hoy'));
   h+=`<div class="nav-section">Personas</div>`;
   allPeople().forEach(n=>{const op=TASKS.filter(t=>isOpen(t)&&(normPerson(t.responsible)||'(sin asignar)')===n).length;const a=state.view==='personas'&&state.person===n;
     h+=`<button class="nav-item ${a?'active':''}" data-personnav="${escapeAttr(n)}"><span class="av-sm" style="background:${colorFor(n)}">${initials(n)}</span><span style="flex:1">${n==='Yo'?'Yo':escapeH(n)}</span>${op?`<span class="count">${op}</span>`:''}</button>`});
+  h+=`<button class="nav-item nav-add" id="newPerson"><span class="ico">${svg('<path d="M12 5v14M5 12h14"/>',15)}</span>Nueva persona</button>`;
   h+=`<div class="nav-section">Proyectos</div>`;
   PROJECTS.forEach(p=>{const open=TASKS.filter(t=>t.project===p.id&&isOpen(t)).length;const a=state.view==='proyectos'&&state.proj===p.id;
     h+=`<button class="nav-item ${a?'active':''}" data-proj="${p.id}"><span style="width:9px;height:9px;border-radius:50%;background:${p.color}"></span><span style="flex:1">${escapeH(p.name)}</span>${open?`<span class="count">${open}</span>`:''}</button>`});
@@ -547,6 +548,7 @@ function renderNav(){
   document.querySelectorAll('[data-proj]').forEach(b=>b.onclick=()=>{state.view='proyectos';state.proj=b.dataset.proj;state.sel=null;state.person=null;closeSidebar();render()});
   document.querySelectorAll('[data-personnav]').forEach(b=>b.onclick=()=>{state.view='personas';state.person=b.dataset.personnav;state.proj=null;state.sel=null;closeSidebar();render()});
   const np=document.getElementById('newProj');if(np)np.onclick=createProject;
+  const npe=document.getElementById('newPerson');if(npe)npe.onclick=createPerson;
 }
 function navItem(v,count){const a=state.view===v.id;return `<button class="nav-item ${a?'active':''}" data-view="${v.id}"><span class="ico">${svg(I[v.ic],16)}</span><span style="flex:1">${v.name}</span>${count?`<span class="count">${count}</span>`:''}</button>`}
 
@@ -565,6 +567,7 @@ function render(){
   else if(state.view==='calendario'){scroll.innerHTML=renderCalendar();bindMini()}
   else if(state.view==='revision'){scroll.innerHTML=renderReview();bindReview()}
   else if(state.view==='personas'&&!state.person){scroll.innerHTML=renderPeople();bindPeople()}
+  else if(state.view==='personas'&&state.person){scroll.innerHTML=renderPersonView();bindTasks();const db=document.querySelector('[data-delperson]');if(db)db.onclick=()=>deletePerson(db.dataset.delperson)}
   else if(state.view==='proyectos'&&!state.proj){scroll.innerHTML=renderProjects();bindProjects()}
   else if(state.view==='proyectos'&&state.proj){scroll.innerHTML=renderProjectView();bindTasks();const db=document.querySelector('[data-delproj]');if(db)db.onclick=()=>deleteProject(db.dataset.delproj)}
   else if(state.view==='todas'){scroll.innerHTML=renderAll();bindTasks()}
@@ -663,6 +666,13 @@ function renderSeguimientos(){
     </div>`}).join('');
 }
 
+function renderPersonView(){
+  let list=applyFilters(TASKS.filter(t=>isOpen(t)&&(normPerson(t.responsible)||'(sin asignar)')===state.person)).sort(byDate);
+  let h='';
+  if(state.person!=='Yo'&&state.person!=='(sin asignar)')h+=`<div class="proj-toolbar"><button class="del-proj" data-delperson="${escapeAttr(state.person)}">${svg(I.trash,14)} Eliminar persona</button></div>`;
+  h+=list.length?list.map(taskRow).join(''):`<div class="empty" style="padding:40px 20px"><h3>Sin pendientes</h3><p>${state.person==='Yo'?'No tienes tareas asignadas.':escapeH(state.person)+' no tiene tareas asignadas.'}</p></div>`;
+  return h;
+}
 function renderProjectView(){
   let list=applyFilters(TASKS.filter(t=>t.project===state.proj)).sort(byDate);
   let h='';
@@ -923,6 +933,8 @@ function slugify(x){return (x||'').toLowerCase().normalize('NFD').replace(/[\u03
 const PALETTE=['#3f7d52','#1f3a5f','#7c5cbf','#c2607a','#3f9d9d','#d4923e','#b08a3e','#8a5a3a','#2d6b8f','#a8423a','#5a7d3f','#9a5ba0'];
 function createProject(){const name=prompt('Nombre del nuevo proyecto:');if(!name||!name.trim())return;let id=slugify(name);while(PROJECTS.some(p=>p.id===id))id+='-1';PROJECTS.push({id,name:name.trim(),color:PALETTE[PROJECTS.length%PALETTE.length]});save();state.view='proyectos';state.proj=id;state.person=null;closeSidebar();render();toast('Proyecto creado')}
 function deleteProject(id){if(id==='general'){toast('No se puede eliminar General');return}const p=proj(id);const n=TASKS.filter(t=>t.project===id).length;if(!confirm(`¿Eliminar el proyecto "${p.name}"?`+(n?`\nSus ${n} tarea(s) pasarán a General.`:'')))return;TASKS.forEach(t=>{if(t.project===id){t.project='general';logH(t,'Proyecto eliminado → General')}});PROJECTS=PROJECTS.filter(x=>x.id!==id);if(state.proj===id){state.proj=null;state.view='hoy'}save();render();toast('Proyecto eliminado')}
+function createPerson(){const name=prompt('Nombre de la nueva persona:');if(!name||!name.trim())return;const nm=name.trim();if(/^(yo|mau|mauricio)$/i.test(nm)){toast('Ya existe Yo');return}if(!allPeople().includes(nm))PEOPLE.push(nm);save();state.view='personas';state.person=nm;state.proj=null;state.sel=null;closeSidebar();render();toast('Persona agregada')}
+function deletePerson(name){if(normPerson(name)==='Yo'){toast('No puedes eliminarte');return}const n=TASKS.filter(t=>normPerson(t.responsible)===name).length;if(!confirm(`¿Eliminar a "${name}"?`+(n?`\nSus ${n} tarea(s) pasarán a ti (Yo).`:'')))return;TASKS.forEach(t=>{if(normPerson(t.responsible)===name){t.responsible='Yo';logH(t,'Responsable eliminado → Yo')}});PEOPLE=PEOPLE.filter(x=>x!==name);if(state.person===name){state.person=null;state.view='hoy'}save();render();toast('Persona eliminada')}
 
 /* ---- BIND LISTAS ---- */
 function bindTasks(){
