@@ -544,7 +544,7 @@ function setCloud(s){const el=document.getElementById('cloud');if(!el)return;
 function scheduleCloud(){if(!cloudReady)return;clearTimeout(saveT);setCloud('saving');saveT=setTimeout(cloudSave,400)}
 async function cloudLoad(){
   if(CLOUD.key.startsWith('__'))return false;
-  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}&select=data`,{headers:hGet()});
+  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}&select=data`,{headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key}});
     if(!r.ok)throw 0;const j=await r.json();
     if(!j||!j[0]||!j[0].data)return null;
     const p=typeof j[0].data==='string'?JSON.parse(j[0].data):j[0].data;
