@@ -525,7 +525,7 @@ function checkOAuthCallback(){const h=window.location.hash;if(h&&h.includes('acc
 async function refreshToken(){if(!SESSION||!SESSION.refresh_token)return false;try{const r=await fetch(CLOUD.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:CLOUD.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:SESSION.refresh_token})});if(!r.ok)return false;saveSession(await r.json());return true}catch(e){return false}}
 async function signOut(){if(SESSION&&SESSION.access_token){try{await fetch(CLOUD.url+'/auth/v1/logout',{method:'POST',headers:hGet()})}catch(e){}}clearSession();showLogin()}
 function showLogin(){document.getElementById('loginScreen').classList.remove('hidden');document.getElementById('app').classList.add('hidden')}
-function startApp(){document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');if(!loadLocal()){TASKS=seed();saveLocal()}rollover();render();cloudInit();scheduleRefreshToken()}
+function startApp(){document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');loadLocal();rollover();render();cloudInit();scheduleRefreshToken()}
 function scheduleRefreshToken(){const ms=SESSION&&SESSION.expires_in?(SESSION.expires_in-120)*1000:3300000;setTimeout(async()=>{if(await refreshToken())scheduleRefreshToken();else showLogin()},ms>0?ms:60000)}
 function showError(msg){document.getElementById('loginError').textContent=typeof msg==='string'?msg:(msg&&msg.message?msg.message:'Error')}
 async function handleLogin(){const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPass').value;if(!e||!p){showError('Ingresa correo y contraseña');return}document.getElementById('loginBtn').textContent='Ingresando…';try{await signIn(e,p);startApp()}catch(x){showError(x)}document.getElementById('loginBtn').textContent='Iniciar sesión'}
@@ -542,16 +542,6 @@ function setCloud(s){const el=document.getElementById('cloud');if(!el)return;
   const map={saving:['saving','Guardando…'],saved:['ok','Sincronizado'],error:['err','Sin conexión · local'],off:['','Solo local']};
   const d=map[s]||['',''];el.innerHTML=`<span class="cloud-dot ${d[0]}"></span>${d[1]}${s==='saved'?' · '+new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):''}`}
 function scheduleCloud(){if(!cloudReady)return;clearTimeout(saveT);setCloud('saving');saveT=setTimeout(cloudSave,400)}
-function mergeData(local,cloud){
-  const tm=new Map();
-  (cloud.tasks||[]).forEach(t=>tm.set(t.id,t));
-  (local.tasks||[]).forEach(t=>{const ex=tm.get(t.id);if(!ex){tm.set(t.id,t);return}const ld=(t.history&&t.history.length?t.history[t.history.length-1].d:t.createdAt)||'';const cd=(ex.history&&ex.history.length?ex.history[ex.history.length-1].d:ex.createdAt)||'';if(ld>=cd)tm.set(t.id,t)});
-  const pm=new Map();
-  (cloud.projects||[]).forEach(p=>pm.set(p.id,p));
-  (local.projects||[]).forEach(p=>pm.set(p.id,p));
-  const ps=new Set([...(cloud.people||[]),...(local.people||[])]);
-  return {tasks:[...tm.values()],projects:[...pm.values()],people:[...ps]}
-}
 async function cloudLoad(){
   if(CLOUD.key.startsWith('__'))return false;
   try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}&select=data`,{headers:hGet()});
@@ -580,7 +570,7 @@ async function cloudInit(){
   if(CLOUD.key.startsWith('__')){cloudReady=false;setCloud('off');return}
   const res=await cloudLoad();
   if(res===true){cloudReady=true;rollover();render();setCloud('saved')}
-  else if(res===null){cloudReady=true;await cloudSave()}
+  else if(res===null){if(!TASKS.length){TASKS=seed()}cloudReady=true;saveLocal();await cloudSave();setCloud('saved')}
   else{cloudReady=false;setCloud('error')}}
 
 function seed(){
@@ -1275,7 +1265,7 @@ document.getElementById('msgOverlay').onclick=(e)=>{if(e.target.id==='msgOverlay
 document.getElementById('msgCopy').onclick=copyMsg;
 document.getElementById('msgWa').onclick=()=>{window.open('https://wa.me/?text='+encodeURIComponent(document.getElementById('msgText').value),'_blank')};
 document.getElementById('search').oninput=(e)=>{state.search=e.target.value.trim();render()};
-document.getElementById('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(TASKS,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dailymau_'+todayStr()+'.json';a.click();toast('Respaldo exportado')};
+document.getElementById('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dailymau_'+todayStr()+'.json';a.click();toast('Respaldo exportado')};
 document.addEventListener('keydown',(e)=>{if(e.target.matches('input,textarea,select'))return;if(e.key==='n'||e.key==='N'){e.preventDefault();openModal()}if(e.key==='Escape'){closeModal();if(state.sel){state.sel=null;render()}}if(e.key==='/'){e.preventDefault();document.getElementById('search').focus()}});
 
 /* ---- INIT ---- */
