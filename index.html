@@ -540,7 +540,9 @@ function renderNav(){
   let h=`<div class="nav-section">Vistas</div>`;
   h+=navItem(VIEWS.find(v=>v.id==='hoy'))+navItem(VIEWS.find(v=>v.id==='realizadas'));
   h+=`<div class="nav-section">Proyectos</div>`;
-  PROJECTS.forEach(p=>{const open=TASKS.filter(t=>t.project===p.id&&isOpen(t)).length;const a=state.view==='proyectos'&&state.proj===p.id;
+  PROJECTS.map(p=>({p,open:TASKS.filter(t=>t.project===p.id&&isOpen(t)).length}))
+    .sort((a,b)=>b.open-a.open)
+    .forEach(({p,open})=>{const a=state.view==='proyectos'&&state.proj===p.id;
     h+=`<button class="nav-item ${a?'active':''}" data-proj="${p.id}"><span style="width:9px;height:9px;border-radius:50%;background:${p.color}"></span><span style="flex:1">${escapeH(p.name)}</span>${open?`<span class="count">${open}</span>`:''}</button>`});
   h+=`<button class="nav-item nav-add" id="newProj"><span class="ico">${svg('<path d="M12 5v14M5 12h14"/>',15)}</span>Nuevo proyecto</button>`;
   h+=`<div class="nav-section">Personas</div>`;
