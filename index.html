@@ -116,10 +116,10 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .task.flagged{border-left:3px solid var(--gold)}
 .task.done{opacity:.5}
 .task.done .t-title{text-decoration:line-through}
-.check{width:19px;height:19px;border-radius:50%;border:1.8px solid var(--ink-3);flex-shrink:0;margin-top:1px;display:grid;place-items:center;transition:.15s;background:transparent}
+.check{width:26px;height:26px;border-radius:50%;border:2px solid var(--ink-3);flex-shrink:0;margin-top:0;display:grid;place-items:center;transition:.15s;background:transparent}
 .check:hover{border-color:var(--accent)}
 .check.on{background:var(--green);border-color:var(--green)}
-.check svg{width:11px;height:11px;stroke:#fff;stroke-width:3.2;opacity:0;transition:.15s}
+.check svg{width:14px;height:14px;stroke:#fff;stroke-width:3.2;opacity:0;transition:.15s}
 .check.on svg{opacity:1}
 .t-body{flex:1;min-width:0}
 .t-title{font-size:14px;font-weight:500;letter-spacing:-.005em;color:var(--ink);display:flex;align-items:center;gap:7px}
@@ -140,12 +140,13 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .who .av{width:16px;height:16px;border-radius:50%;background:var(--accent);color:#fff;font-size:8.5px;font-weight:600;display:grid;place-items:center}
 .who.sup{color:var(--accent);font-weight:600}
 
-.row-actions{display:flex;gap:2px;opacity:0;transition:.12s;align-self:center}
+.row-actions{display:flex;gap:4px;opacity:0;transition:.12s;align-self:center}
+@media (hover:none){.row-actions{opacity:1}}
 .task:hover .row-actions{opacity:1}
-.ra{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;color:var(--ink-3)}
+.ra{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:var(--ink-3)}
 .ra:hover{background:var(--bg-3);color:var(--ink)}
 .ra.starred{color:var(--gold)}
-.ra svg{width:14px;height:14px}
+.ra svg{width:18px;height:18px}
 
 .empty{text-align:center;padding:70px 20px;color:var(--ink-3)}
 .empty .em-ico{width:48px;height:48px;margin:0 auto 14px;opacity:.4}
