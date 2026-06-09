@@ -551,7 +551,7 @@ async function cloudLoad(){
     let ct=[],cp=[],cpe=[];
     if(Array.isArray(p))ct=p;
     else if(p&&Array.isArray(p.tasks)){ct=p.tasks;cp=p.projects||[];cpe=p.people||[]}
-    if(!ct.length)return null;
+    if(!ct.length)return false;
     TASKS=ct;if(cp.length)PROJECTS=cp;if(cpe.length)PEOPLE=cpe;
     saveLocal();return true;
   }catch(e){return false}}
@@ -570,8 +570,8 @@ async function cloudInit(){
   if(CLOUD.key.startsWith('__')){cloudReady=false;setCloud('off');return}
   const res=await cloudLoad();
   if(res===true){cloudReady=true;rollover();render();setCloud('saved')}
-  else if(res===null){if(!TASKS.length){TASKS=seed()}cloudReady=true;saveLocal();await cloudSave();setCloud('saved')}
-  else{cloudReady=false;setCloud('error')}}
+  else if(res===null){cloudReady=true;if(TASKS.length){await cloudSave();setCloud('saved')}else{setCloud('off')}}
+  else{cloudReady=TASKS.length>0;setCloud(TASKS.length>0?'saved':'error')}}
 
 function seed(){return []}
 
