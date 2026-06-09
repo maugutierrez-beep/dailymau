@@ -1078,7 +1078,7 @@ function logH(t,txt){t.history=t.history||[];t.history.push({d:todayStr(),t:txt}
 
 /* ---- ACCIONES ---- */
 function toggleComplete(id){const t=TASKS.find(x=>x.id===id);if(!t)return;if(isDone(t)){t.status='en_proceso';t.completedAt='';logH(t,'Reabierta')}else{t.status='completado';t.completedAt=todayStr();logH(t,'Realizada')}save()}
-function snooze(id){const t=TASKS.find(x=>x.id===id);if(!t)return;const base=t.due&&daysFrom(t.due)>0?new Date(t.due):new Date(todayStr());base.setDate(base.getDate()+1);t.due=base.toISOString().slice(0,10);if(t.status==='no_iniciado')t.status='pospuesto';logH(t,'Pasada a mañana');save()}
+function snooze(id){const t=TASKS.find(x=>x.id===id);if(!t)return;t.due=addD(1);if(t.status==='no_iniciado')t.status='pospuesto';logH(t,'Pasada a mañana');save()}
 function toFollow(id){const t=TASKS.find(x=>x.id===id);if(!t)return;t.type='seguimiento';t.status='esperando';if(!t.nextReview)t.nextReview=addD(2);if(!t.lastContact)t.lastContact=todayStr();logH(t,'Convertida en seguimiento');save()}
 function delegate(id){const t=TASKS.find(x=>x.id===id);if(!t)return;const who=prompt('¿A quién se la asignas / quién es responsable?',isMine(t)?'':t.responsible);if(who===null)return;t.responsible=who.trim()||'(sin asignar)';if(t.type==='tarea')t.type='seguimiento';if(t.status==='no_iniciado')t.status='esperando';if(!t.nextReview)t.nextReview=addD(3);if(!t.nextAction)t.nextAction='Hacer seguimiento si no responde';logH(t,`Asignada a ${t.responsible}`);save();toast('Asignada a '+normPerson(t.responsible))}
 function slugify(x){return (x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')||('p'+Date.now().toString(36))}
