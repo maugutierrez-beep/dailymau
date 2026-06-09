@@ -1,0 +1,86 @@
+name: DailyMau Resumen Diario
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enviar resumen diario
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          python3 << 'PYEOF'
+          import json, urllib.request, smtplib, os
+          from email.mime.text import MIMEText
+          from email.mime.multipart import MIMEMultipart
+          from datetime import datetime, timedelta
+          SB=os.environ['SUPABASE_URL'];SK=os.environ['SUPABASE_KEY']
+          req=urllib.request.Request(SB+'/rest/v1/dailymau_db?id=eq.main&select=data',headers={'apikey':SK,'Authorization':'Bearer '+SK})
+          raw=json.loads(urllib.request.urlopen(req).read())[0]['data']
+          data=json.loads(raw) if isinstance(raw,str) else raw
+          tasks=data.get('tasks',[]) if isinstance(data,dict) else data
+          projects={p['id']:p for p in (data.get('projects',[]) if isinstance(data,dict) else [])}
+          now=datetime.utcnow()-timedelta(hours=5)
+          today=now.strftime('%Y-%m-%d')
+          tmr=(now+timedelta(days=1)).strftime('%Y-%m-%d')
+          DIAS=['lunes','martes','miércoles','jueves','viernes','sábado','domingo']
+          MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+          dia_sem=DIAS[now.weekday()]
+          fecha=f"{dia_sem} {now.day} de {MESES[now.month-1]} de {now.year}"
+          op=[t for t in tasks if t.get('status') not in ('completado','cancelado')]
+          hoy=[t for t in op if t.get('due') and t['due']<=today]
+          man=[t for t in op if t.get('due')==tmr]
+          fut=[t for t in op if t.get('due') and t['due']>tmr]
+          sin=[t for t in op if not t.get('due')]
+          def pn(pid): return projects.get(pid,{}).get('name',pid)
+          def pc(pid): return projects.get(pid,{}).get('color','#888')
+          def sec(title,items,accent='#1f3a5f'):
+              if not items: return ''
+              bp={}
+              for t in items:
+                  bp.setdefault(t.get('project','general'),[]).append(t)
+              h=f'<div style="margin:24px 0 10px;padding:10px 16px;background:{accent}11;border-left:4px solid {accent};border-radius:0 8px 8px 0"><h2 style="margin:0;font-size:16px;color:{accent}">{title} ({len(items)})</h2></div>'
+              for pid in sorted(bp,key=lambda x:-len(bp[x])):
+                  h+=f'<div style="margin:8px 0 4px 8px;font-size:12px;color:{pc(pid)};font-weight:600;text-transform:uppercase;letter-spacing:.05em">\u25cf {pn(pid)}</div>'
+                  for t in bp[pid]:
+                      resp=f' <span style="color:#1f3a5f;font-weight:600">\u2014 {t["responsible"]}</span>' if t.get('responsible') and t['responsible']!='Yo' else ''
+                      na=f'<div style="font-size:12px;color:#b08a3e;margin:2px 0 0 18px">\u2192 {t["nextAction"]}</div>' if t.get('nextAction') else ''
+                      h+=f'<div style="padding:6px 0 6px 16px;border-bottom:1px solid #f0f0ed"><span style="font-size:14px">{t["title"]}</span>{resp}{na}</div>'
+              return h
+          body=f'''<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e6e5e1;border-radius:16px;overflow:hidden">
+          <div style="background:linear-gradient(135deg,#2d4d77,#1f3a5f);padding:28px 24px;color:#fff">
+            <div style="font-size:12px;opacity:.75;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Resumen diario</div>
+            <div style="font-size:24px;font-weight:600">DailyMau</div>
+            <div style="font-size:14px;opacity:.85;margin-top:4px">{fecha.capitalize()}</div>
+          </div>
+          <div style="padding:8px 20px 4px">
+            <div style="font-size:14px;color:#5b5b56;padding:16px 0;border-bottom:1px solid #efeeea">
+              Tienes <b style="color:#1c1c1a">{len(hoy)}</b> para hoy, <b style="color:#1c1c1a">{len(man)}</b> para ma\u00f1ana, <b style="color:#1c1c1a">{len(fut)}</b> pr\u00f3ximas y <b style="color:#1c1c1a">{len(sin)}</b> sin fecha.
+            </div>
+          </div>
+          <div style="padding:0 20px 24px">
+            {sec("Para hoy",hoy,"#1f3a5f")}
+            {sec("Ma\u00f1ana",man,"#b08a3e")}
+            {sec("Pr\u00f3ximas",fut,"#3f7d52")}
+            {sec("Sin fecha",sin,"#8d8d86") if sin else ""}
+          </div>
+          <div style="background:#f7f7f5;padding:16px 24px;text-align:center;font-size:12px;color:#8d8d86;border-top:1px solid #efeeea">
+            <a href="https://maugutierrez-beep.github.io/dailymau/" style="color:#1f3a5f;font-weight:600;text-decoration:none">Abrir DailyMau \u2192</a>
+          </div>
+          </div>'''
+          msg=MIMEMultipart('alternative')
+          msg['Subject']=f'DailyMau \u2014 {len(hoy)} pendiente(s) para hoy, {dia_sem} {now.day}'
+          msg['From']=os.environ['GMAIL_USER']
+          msg['To']=os.environ['GMAIL_USER']
+          msg.attach(MIMEText(body,'html'))
+          with smtplib.SMTP_SSL('smtp.gmail.com',465) as sv:
+              sv.login(os.environ['GMAIL_USER'],os.environ['GMAIL_APP_PASSWORD'])
+              sv.send_message(msg)
+          print(f'Enviado: {len(hoy)} hoy, {len(man)} manana, {len(fut)} proximas, {len(sin)} sin fecha')
+          PYEOF
