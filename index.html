@@ -501,7 +501,7 @@ const I={
 const svg=(p,w=16)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="${w}" height="${w}">${p}</svg>`;
 
 let TASKS=[],PEOPLE=[],state={view:'dia',sel:null,filter:{},search:'',proj:null,person:null,revMode:'am',showDone:false};
-const KEY='dailymau_tasks_v1';
+const KEY='dailymau_v3';
 function localISO(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 const todayStr=()=>localISO(new Date());
 const uid=()=>'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -1269,7 +1269,7 @@ document.getElementById('exportBtn').onclick=()=>{const blob=new Blob([JSON.stri
 document.addEventListener('keydown',(e)=>{if(e.target.matches('input,textarea,select'))return;if(e.key==='n'||e.key==='N'){e.preventDefault();openModal()}if(e.key==='Escape'){closeModal();if(state.sel){state.sel=null;render()}}if(e.key==='/'){e.preventDefault();document.getElementById('search').focus()}});
 
 /* ---- INIT ---- */
-initTheme();loadSession();
+initTheme();try{localStorage.removeItem('dailymau_tasks_v1')}catch(e){}loadSession();
 if(checkOAuthCallback()){startApp()}
 else if(SESSION&&SESSION.access_token){startApp()}
 else{showLogin()}
