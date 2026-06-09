@@ -370,7 +370,7 @@ const TYPES=[{id:'tarea',name:'Tarea',ic:'check'},{id:'seguimiento',name:'Seguim
 const STATUSES=[{id:'no_iniciado',name:'No iniciado'},{id:'en_proceso',name:'En proceso'},{id:'esperando',name:'Esperando respuesta'},{id:'pospuesto',name:'Arrastrado'},{id:'completado',name:'Realizado'},{id:'cancelado',name:'Cancelado'}];
 const CHANNELS=[{id:'',name:'—'},{id:'whatsapp',name:'WhatsApp'},{id:'correo',name:'Correo'},{id:'llamada',name:'Llamada'},{id:'reunion',name:'Reunión'}];
 const VIEWS=[
-  {id:'hoy',name:'Hoy',ic:'sun'},{id:'importantes',name:'Importantes',ic:'star'},
+  {id:'hoy',name:'Hoy',ic:'sun'},{id:'todas',name:'Todas',ic:'list'},{id:'importantes',name:'Importantes',ic:'star'},
   {id:'personas',name:'Personas',ic:'users'},{id:'seguimientos',name:'Seguimientos',ic:'loop'},
   {id:'inbox',name:'Inbox',ic:'inbox'},{id:'calendario',name:'Calendario',ic:'cal'},
   {id:'revision',name:'Revisión diaria',ic:'sparkle'},
@@ -395,6 +395,7 @@ const I={
   snooze:'<circle cx="12" cy="12" r="9"/><path d="M9 9h6l-6 6h6"/>',
   delegate:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M16 11h6"/>',
   layers:'<path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
 };
 const svg=(p,w=16)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="${w}" height="${w}">${p}</svg>`;
 
@@ -507,6 +508,7 @@ const addD=(n)=>{const x=new Date();x.setDate(x.getDate()+n);return x.toISOStrin
 function renderNav(){
   const c={};
   c.hoy=TASKS.filter(t=>isOpen(t)&&isMine(t)&&t.due&&daysFrom(t.due)<=0).length;
+  c.todas=TASKS.filter(isOpen).length;
   c.importantes=TASKS.filter(isImportant).length;
   c.personas=new Set(TASKS.filter(isOpen).map(t=>normPerson(t.responsible)||'(sin asignar)')).size;
   c.seguimientos=TASKS.filter(t=>isOpen(t)&&(t.type==='seguimiento'||t.status==='esperando')).length;
@@ -528,7 +530,7 @@ function navItem(v,count){const a=state.view===v.id;return `<button class="nav-i
 function go(v){state.view=v;state.proj=null;state.person=null;state.sel=null;state.filter={};closeSidebar();render()}
 function render(){
   renderNav();updatePeopleList();
-  const titles={hoy:['Hoy',fmtDate()],importantes:['Importantes','Lo que no debe caerse'],personas:['Personas','Tareas propias y supervisadas'],seguimientos:['Seguimientos','Temas que dependen de otros'],inbox:['Inbox','Captura rápida sin clasificar'],calendario:['Calendario','Tareas por fecha'],revision:['Revisión diaria','Inicio y cierre del día'],proyectos:[state.proj?projName(state.proj):'Proyectos','']};
+  const titles={hoy:['Hoy',fmtDate()],todas:['Todas las pendientes','Vista consolidada por proyecto'],importantes:['Importantes','Lo que no debe caerse'],personas:['Personas','Tareas propias y supervisadas'],seguimientos:['Seguimientos','Temas que dependen de otros'],inbox:['Inbox','Captura rápida sin clasificar'],calendario:['Calendario','Tareas por fecha'],revision:['Revisión diaria','Inicio y cierre del día'],proyectos:[state.proj?projName(state.proj):'Proyectos','']};
   let [title,sub]=titles[state.view]||['',''];
   if(state.view==='personas'&&state.person){title=state.person==='Yo'?'Mis tareas':state.person;sub=state.person==='Yo'?'Pendientes a tu cargo':'Tareas que supervisas'}
   document.getElementById('viewTitle').textContent=title;
@@ -539,6 +541,7 @@ function render(){
   else if(state.view==='revision'){fbar.style.display='none';scroll.innerHTML=renderReview();bindReview()}
   else if(state.view==='personas'&&!state.person){fbar.style.display='none';scroll.innerHTML=renderPeople();bindPeople()}
   else if(state.view==='proyectos'&&!state.proj){fbar.style.display='none';scroll.innerHTML=renderProjects();bindProjects()}
+  else if(state.view==='todas'){renderFilters();scroll.innerHTML=renderAll();bindTasks()}
   else if(state.view==='seguimientos'){renderFilters();scroll.innerHTML=renderSeguimientos();bindTasks()}
   else{renderFilters();scroll.innerHTML=renderList();bindTasks()}
   renderDetail();
@@ -636,6 +639,17 @@ function renderSeguimientos(){
     </div>`}).join('');
 }
 
+function renderAll(){
+  let list=applyFilters(TASKS.filter(isOpen));
+  if(!list.length)return emptyState('Sin pendientes','No tienes tareas abiertas.');
+  const sup=list.filter(t=>!isMine(t)).length;
+  let h=`<div style="font-size:12.5px;color:var(--ink-3);padding:2px 4px 8px"><b style="color:var(--ink)">${list.length}</b> pendiente(s) en total · ${list.length-sup} tuya(s) · ${sup} supervisada(s)</div>`;
+  PROJECTS.forEach(p=>{const arr=list.filter(t=>t.project===p.id).sort(byDate);if(!arr.length)return;
+    h+=`<div class="group-h"><span style="width:8px;height:8px;border-radius:50%;background:${p.color}"></span>${p.name} <span class="gc">${arr.length}</span></div>`+arr.map(taskRow).join('')});
+  const otros=list.filter(t=>!PROJECTS.some(p=>p.id===t.project)).sort(byDate);
+  if(otros.length)h+=`<div class="group-h">Otros <span class="gc">${otros.length}</span></div>`+otros.map(taskRow).join('');
+  return h;
+}
 function emptyState(title='Todo en orden',sub='No hay nada pendiente en esta vista.'){return `<div class="empty"><div class="em-ico">${svg(I.check,48)}</div><h3>${title}</h3><p>${sub}</p></div>`}
 
 /* ---- PERSONAS ---- */
