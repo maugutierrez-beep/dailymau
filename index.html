@@ -893,8 +893,8 @@ function renderDay(){
   if(tmr)h+=`<button class="day-bring" id="bringT">${svg(I.arrow,14)} Traer ${tmr} de mañana a hoy</button>`;
   if(!today.length)return h+`<div class="empty" style="padding:30px 20px"><h3>Día libre</h3><p>Agrega tareas o trae las de mañana.</p></div>`;
   const byproj={};today.forEach(t=>{(byproj[t.project]=byproj[t.project]||[]).push(t)});
-  const order=Object.keys(byproj).sort((a,b)=>byproj[b].length-byproj[a].length);
-  order.forEach(pid=>{const op=!COLLAPSE['dg_'+pid];const arr=byproj[pid].sort((a,b)=>{const fa=(b.flag?1:0)-(a.flag?1:0);return fa!==0?fa:byDate(a,b)});
+  const projOrder=PROJECTS.map(p=>p.id);const order=Object.keys(byproj).sort((a,b)=>{const ia=projOrder.indexOf(a),ib=projOrder.indexOf(b);return (ia<0?999:ia)-(ib<0?999:ib)});
+  order.forEach(pid=>{const op=!COLLAPSE['dg_'+pid];const arr=byproj[pid].sort((a,b)=>{const fa=(b.flag?1:0)-(a.flag?1:0);if(fa!==0)return fa;return (a.createdAt||'').localeCompare(b.createdAt||'')||(a.id||'').localeCompare(b.id||'')});
     h+=`<button class="day-group" data-dg="${pid}"><span class="dg-dot" style="background:${proj(pid).color}"></span><span style="flex:1">${escapeH(projName(pid))}</span><span class="dg-c">${arr.length}</span><svg class="chev ${op?'open':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>`;
     if(op)h+=arr.map(dayRow).join('')});
   return h;
