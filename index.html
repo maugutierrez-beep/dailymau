@@ -469,7 +469,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
   <div class="modal" style="width:min(540px,94vw)">
     <div class="modal-h" style="padding:18px 22px 4px;display:block"><div id="msgTitle" style="font-family:var(--font-display);font-size:18px;font-weight:600">Mensaje de seguimiento</div></div>
     <div class="modal-b" style="padding:10px 22px"><textarea id="msgText" style="width:100%;min-height:230px;background:var(--bg-3);border:1px solid transparent;border-radius:10px;padding:12px;outline:none;resize:vertical;line-height:1.5;font-size:13.5px;color:var(--ink)"></textarea></div>
-    <div class="modal-f"><div style="display:flex;gap:6px"><button class="btn-ghost" id="msgRegen" style="display:none">↻ Regenerar</button></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn-ghost" id="msgClose">Cerrar</button><button class="btn-ghost" id="msgSave" style="display:none;color:var(--accent);font-weight:600">Guardar borrador</button><button class="btn-primary" id="msgWa" style="background:#25803f">WhatsApp</button><button class="btn-primary" id="msgCopy">Copiar</button></div></div>
+    <div class="modal-f" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn-ghost" id="msgRegen" style="display:none">↻ Regenerar</button><div style="display:flex;gap:8px;align-items:center;margin-left:auto"><button class="btn-ghost" id="msgClose">Cerrar</button><button class="btn-ghost" id="msgSave" style="display:none;color:var(--accent);font-weight:600">Guardar borrador</button><button class="btn-primary" id="msgCopy">Copiar</button><button class="btn-primary" id="msgWa" style="background:#25803f">WhatsApp</button></div></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -923,10 +923,9 @@ function bringTomorrow(){const tmr=addD(1);let n=0;TASKS.forEach(t=>{if(isOpen(t
 function followupText(person){
   const tasks=TASKS.filter(t=>isOpen(t)&&normPerson(t.responsible)===normPerson(person)).sort(byDate);
   const first=person.split(/\s+/)[0];
-  const hr=new Date().getHours();const g=hr<12?'buenos días':hr<19?'buenas tardes':'buenas noches';
-  let txt=`Hola ${first}, ${g}.\n\nTenemos pendientes las siguientes tareas:\n\n`;
+  let txt=`Hola ${first}.\n\nTenemos pendientes los siguientes temas:\n\n`;
   if(!tasks.length)txt+='(Sin tareas pendientes registradas por ahora.)\n';
-  else tasks.forEach((t,i)=>{txt+=`${i+1}. ${t.title}`;if(t.nextAction)txt+=` — ${t.nextAction}`;txt+='\n'});
+  else tasks.forEach((t)=>{txt+=`• ${t.title}`;if(t.nextAction)txt+=` — ${t.nextAction}`;txt+='\n'});
   txt+=`\n¿Me confirmas cómo vamos con estos temas? Quedo atento. ¡Gracias!`;
   return txt;
 }
