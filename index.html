@@ -385,6 +385,16 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
   .topbar{padding:16px 18px 0}.filters{padding:14px 18px 6px}.scroll{padding:8px 18px 60px}
   .head-l h1{font-size:24px}.search-wrap input,.search-wrap input:focus{width:140px}.menu-btn{display:grid}
 }
+
+.msg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.msg-card{background:var(--bg-2);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;transition:all .15s}
+.msg-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow)}
+.msg-card-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.msg-card-name{font-weight:600;font-size:14.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg-card-meta{font-size:11.5px;color:var(--ink-3)}
+.msg-card-prev{font-size:12.5px;color:var(--ink-2);line-height:1.5;background:var(--bg-3);border-radius:9px;padding:9px 11px;white-space:pre-wrap;max-height:72px;overflow:hidden}
+.msg-card-prev.empty{color:var(--ink-3);font-style:italic}
+.msg-card-date{font-size:11px;color:var(--ink-3);margin-top:8px}
 </style>
 </head>
 <body>
@@ -459,7 +469,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
   <div class="modal" style="width:min(540px,94vw)">
     <div class="modal-h" style="padding:18px 22px 4px;display:block"><div id="msgTitle" style="font-family:var(--font-display);font-size:18px;font-weight:600">Mensaje de seguimiento</div></div>
     <div class="modal-b" style="padding:10px 22px"><textarea id="msgText" style="width:100%;min-height:230px;background:var(--bg-3);border:1px solid transparent;border-radius:10px;padding:12px;outline:none;resize:vertical;line-height:1.5;font-size:13.5px;color:var(--ink)"></textarea></div>
-    <div class="modal-f"><div style="font-size:11.5px;color:var(--ink-3)">Edítalo si quieres y cópialo.</div><div style="display:flex;gap:6px"><button class="btn-ghost" id="msgClose">Cerrar</button><button class="btn-primary" id="msgWa" style="background:#25803f">WhatsApp</button><button class="btn-primary" id="msgCopy">Copiar</button></div></div>
+    <div class="modal-f"><div style="display:flex;gap:6px"><button class="btn-ghost" id="msgRegen" style="display:none">↻ Regenerar</button></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn-ghost" id="msgClose">Cerrar</button><button class="btn-ghost" id="msgSave" style="display:none;color:var(--accent);font-weight:600">Guardar borrador</button><button class="btn-primary" id="msgWa" style="background:#25803f">WhatsApp</button><button class="btn-primary" id="msgCopy">Copiar</button></div></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -484,7 +494,7 @@ const STATUSES=[{id:'no_iniciado',name:'No iniciado'},{id:'en_proceso',name:'En 
 const CHANNELS=[{id:'',name:'—'},{id:'whatsapp',name:'WhatsApp'},{id:'correo',name:'Correo'},{id:'llamada',name:'Llamada'},{id:'reunion',name:'Reunión'}];
 const VIEWS=[
   {id:'dia',name:'Mi día',ic:'sun'},{id:'hoy',name:'Tareas',ic:'grid'},{id:'realizadas',name:'Realizadas',ic:'check'},{id:'todas',name:'Todas',ic:'list'},
-  {id:'personas',name:'Personas',ic:'users'},{id:'seguimientos',name:'Seguimientos',ic:'loop'},
+  {id:'personas',name:'Personas',ic:'users'},{id:'mensajes',name:'Mensajes',ic:'chat'},{id:'seguimientos',name:'Seguimientos',ic:'loop'},
   {id:'inbox',name:'Inbox',ic:'inbox'},{id:'calendario',name:'Calendario',ic:'cal'},
   {id:'revision',name:'Revisión diaria',ic:'sparkle'},
 ];
@@ -515,7 +525,7 @@ const I={
 };
 const svg=(p,w=16)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="${w}" height="${w}">${p}</svg>`;
 
-let TASKS=[],PEOPLE=[],state={view:'dia',sel:null,filter:{},search:'',proj:null,person:null,revMode:'am',showDone:false};
+let TASKS=[],PEOPLE=[],DRAFTS={},state={view:'dia',sel:null,filter:{},search:'',proj:null,person:null,revMode:'am',showDone:false};
 const KEY='dailymau_tasks_v1';
 function localISO(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 const todayStr=()=>localISO(new Date());
@@ -548,8 +558,8 @@ async function handleSignup(){const e=document.getElementById('loginEmail').valu
 
 const CLOUD={url:'https://cwqenbkjvuqtaynxpomq.supabase.co',key:'sb_publishable_WGdKp8XsGWxV0hy-qNZ7-g_X_KMfGYR',table:'dailymau_db',row:'main'};
 let cloudReady=false,saveT=null;
-function serialize(){return JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE})}
-function applyParsed(p){if(Array.isArray(p)){TASKS=p;return p.length>0}if(p&&Array.isArray(p.tasks)){TASKS=p.tasks;if(Array.isArray(p.projects)&&p.projects.length)PROJECTS=p.projects;if(Array.isArray(p.people))PEOPLE=p.people;return p.tasks.length>0}return false}
+function serialize(){return JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE,drafts:DRAFTS})}
+function applyParsed(p){if(Array.isArray(p)){TASKS=p;return p.length>0}if(p&&Array.isArray(p.tasks)){TASKS=p.tasks;if(Array.isArray(p.projects)&&p.projects.length)PROJECTS=p.projects;if(Array.isArray(p.people))PEOPLE=p.people;if(p.drafts&&typeof p.drafts==='object')DRAFTS=p.drafts;return p.tasks.length>0}return false}
 function loadLocal(){var keys=['dailymau_tasks_v1','dailymau_v3'];var best=null,bestLen=0;for(var i=0;i<keys.length;i++){try{var r=localStorage.getItem(keys[i]);if(r){var d=JSON.parse(r);var t=Array.isArray(d)?d:(d.tasks||[]);if(t.length>bestLen){best=d;bestLen=t.length}}}catch(e){}}if(!best)return false;applyParsed(best);return true}
 function saveLocal(){try{var d=serialize();localStorage.setItem('dailymau_tasks_v1',d);localStorage.setItem('dailymau_v3',d)}catch(e){}}
 function save(){saveLocal();scheduleCloud()}
@@ -567,7 +577,7 @@ async function cloudLoad(){
     if(Array.isArray(p))ct=p;
     else if(p&&Array.isArray(p.tasks)){ct=p.tasks;cp=p.projects||[];cpe=p.people||[]}
     if(!ct.length)return false;
-    TASKS=ct;if(cp.length)PROJECTS=cp;if(cpe.length)PEOPLE=cpe;
+    TASKS=ct;if(cp.length)PROJECTS=cp;if(cpe.length)PEOPLE=cpe;if(p&&p.drafts)DRAFTS=p.drafts;
     saveLocal();return true;
   }catch(e){return false}}
 async function cloudSave(){if(!cloudReady)return;setCloud('saving');
@@ -688,7 +698,7 @@ function navItem(v,count){const a=state.view===v.id;return `<button class="nav-i
 function go(v){state.view=v;state.proj=null;state.person=null;state.sel=null;state.filter={};closeSidebar();render()}
 function render(){
   renderNav();updatePeopleList();
-  const titles={dia:['Mi día',fmtDate()],hoy:['Tareas',fmtDate()],realizadas:['Realizadas','Historial de lo completado'],todas:['Todas las pendientes','Vista consolidada por proyecto'],personas:['Personas','Tareas propias y supervisadas'],seguimientos:['Seguimientos','Temas que dependen de otros'],inbox:['Inbox','Captura rápida sin clasificar'],calendario:['Calendario','Tareas por fecha'],revision:['Revisión diaria','Inicio y cierre del día'],proyectos:[state.proj?projName(state.proj):'Proyectos','']};
+  const titles={dia:['Mi día',fmtDate()],hoy:['Tareas',fmtDate()],realizadas:['Realizadas','Historial de lo completado'],todas:['Todas las pendientes','Vista consolidada por proyecto'],personas:['Personas','Tareas propias y supervisadas'],mensajes:['Mensajes','Borradores guardados por persona'],seguimientos:['Seguimientos','Temas que dependen de otros'],inbox:['Inbox','Captura rápida sin clasificar'],calendario:['Calendario','Tareas por fecha'],revision:['Revisión diaria','Inicio y cierre del día'],proyectos:[state.proj?projName(state.proj):'Proyectos','']};
   let [title,sub]=titles[state.view]||['',''];
   if(state.view==='personas'&&state.person){title=state.person==='Yo'?'Mis tareas':state.person;sub=state.person==='Yo'?'Pendientes a tu cargo':'Tareas que supervisas'}
   document.getElementById('viewTitle').textContent=title;
@@ -701,6 +711,7 @@ function render(){
   else if(state.view==='realizadas'){scroll.innerHTML=renderDone();bindTasks()}
   else if(state.view==='calendario'){scroll.innerHTML=renderCalendar();bindMini()}
   else if(state.view==='revision'){scroll.innerHTML=renderReview();bindReview()}
+  else if(state.view==='mensajes'){scroll.innerHTML=renderMensajes();bindMensajes()}
   else if(state.view==='personas'&&!state.person){scroll.innerHTML=renderPeople();bindPeople()}
   else if(state.view==='personas'&&state.person){scroll.innerHTML=renderPersonView();bindTasks();const db=document.querySelector('[data-delperson]');if(db)db.onclick=()=>deletePerson(db.dataset.delperson);const ap=document.querySelector('[data-addperson]');if(ap)ap.onclick=()=>inlineAddPerson(ap);const fb=document.querySelector('[data-followup]');if(fb)fb.onclick=()=>openFollowup(fb.dataset.followup)}
   else if(state.view==='proyectos'&&!state.proj){scroll.innerHTML=renderProjects();bindProjects()}
@@ -919,9 +930,43 @@ function followupText(person){
   txt+=`\n¿Me confirmas cómo vamos con estos temas? Quedo atento. ¡Gracias!`;
   return txt;
 }
-function openFollowup(person){document.getElementById('msgTitle').textContent='Seguimiento — '+person;document.getElementById('msgText').value=followupText(person);document.getElementById('msgOverlay').classList.add('show');setTimeout(()=>{const ta=document.getElementById('msgText');ta.focus();ta.setSelectionRange(0,0);ta.scrollTop=0},50)}
+function openFollowup(person){state._draftPerson=person;document.getElementById('msgTitle').textContent='Seguimiento — '+person;const sb=document.getElementById('msgSave');if(sb)sb.style.display='';const rb=document.getElementById('msgRegen');if(rb)rb.style.display='';document.getElementById('msgText').value=followupText(person);document.getElementById('msgOverlay').classList.add('show');setTimeout(()=>{const ta=document.getElementById('msgText');ta.focus();ta.setSelectionRange(0,0);ta.scrollTop=0},50)}
 function copyMsg(){const ta=document.getElementById('msgText');ta.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ta.value).then(()=>toast('Copiado al portapapeles')).catch(()=>toast(ok?'Copiado':'Seleccionado, usa Ctrl+C'))}else toast(ok?'Copiado':'Seleccionado, usa Ctrl+C')}
+
+
+function renderMensajes(){
+  const people=allPeople().filter(p=>p!=='Yo');
+  let h='<div style="padding:2px 0 14px;font-size:13px;color:var(--ink-3)">Prepara y guarda mensajes para cada persona. El borrador toma sus tareas pendientes como base; edítalo a tu gusto y guárdalo para enviarlo cuando quieras.</div>';
+  if(!people.length)return h+emptyState('Sin personas','Asigna responsables a tus tareas para preparar mensajes.');
+  h+='<div class="msg-grid">';
+  people.forEach(p=>{
+    const d=DRAFTS[p];
+    const pend=TASKS.filter(t=>isOpen(t)&&normPerson(t.responsible)===normPerson(p)).length;
+    const hasDraft=d&&d.text&&d.text.trim();
+    h+=`<div class="msg-card" data-msgperson="${escapeH(p)}">
+      <div class="msg-card-h"><span class="av" style="background:${colorFor(p)}">${initials(p)}</span><div style="flex:1;min-width:0"><div class="msg-card-name">${escapeH(p)}</div><div class="msg-card-meta">${pend} pendiente${pend!==1?'s':''}${hasDraft?' · <span style="color:var(--accent)">borrador guardado</span>':''}</div></div></div>
+      ${hasDraft?`<div class="msg-card-prev">${escapeH(d.text.slice(0,120))}${d.text.length>120?'…':''}</div>`:'<div class="msg-card-prev empty">Sin borrador. Toca para preparar uno.</div>'}
+      ${d&&d.savedAt?`<div class="msg-card-date">Guardado ${fmtRel(d.savedAt)}</div>`:''}
+    </div>`;
+  });
+  h+='</div>';
+  return h;
+}
+function fmtRel(ts){const d=new Date(ts);const diff=(Date.now()-d)/86400000;if(diff<1)return 'hoy '+d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});if(diff<2)return 'ayer';return d.toLocaleDateString('es',{day:'numeric',month:'short'})}
+function bindMensajes(){document.querySelectorAll('[data-msgperson]').forEach(c=>{c.onclick=()=>openDraft(c.dataset.msgperson)})}
+function openDraft(person){
+  state._draftPerson=person;
+  document.getElementById('msgTitle').textContent='Mensaje — '+person;
+  const d=DRAFTS[person];
+  document.getElementById('msgText').value=(d&&d.text!=null)?d.text:followupText(person);
+  document.getElementById('msgOverlay').classList.add('show');
+  const sb=document.getElementById('msgSave');if(sb)sb.style.display='';
+  const rb=document.getElementById('msgRegen');if(rb)rb.style.display='';
+  setTimeout(()=>{const ta=document.getElementById('msgText');ta.focus();ta.setSelectionRange(0,0);ta.scrollTop=0},50);
+}
+function saveDraft(){const p=state._draftPerson;if(!p)return;const txt=document.getElementById('msgText').value;DRAFTS[p]={text:txt,savedAt:Date.now()};save();toast('Borrador guardado ✓');if(state.view==='mensajes')render()}
+function regenDraft(){const p=state._draftPerson;if(!p)return;if(!confirm('¿Regenerar desde las tareas pendientes? Se perderán tus ediciones.'))return;document.getElementById('msgText').value=followupText(p)}
 
 /* ---- TABLERO PRINCIPAL estilo Any.do ---- */
 const PLUS=svg('<path d="M12 5v14M5 12h14"/>',15);
@@ -1293,6 +1338,8 @@ document.getElementById('loginEmail').onkeydown=(e)=>{if(e.key==='Enter')documen
 document.getElementById('msgClose').onclick=()=>document.getElementById('msgOverlay').classList.remove('show');
 document.getElementById('msgOverlay').onclick=(e)=>{if(e.target.id==='msgOverlay')document.getElementById('msgOverlay').classList.remove('show')};
 document.getElementById('msgCopy').onclick=copyMsg;
+const _msgSave=document.getElementById('msgSave');if(_msgSave)_msgSave.onclick=saveDraft;
+const _msgRegen=document.getElementById('msgRegen');if(_msgRegen)_msgRegen.onclick=regenDraft;
 document.getElementById('msgWa').onclick=()=>{window.open('https://wa.me/?text='+encodeURIComponent(document.getElementById('msgText').value),'_blank')};
 let _searchT;document.getElementById('search').oninput=(e)=>{state.search=e.target.value.trim();clearTimeout(_searchT);_searchT=setTimeout(render,120)};
 document.getElementById('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dailymau_'+todayStr()+'.json';a.click();toast('Respaldo exportado')};
