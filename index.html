@@ -395,6 +395,18 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .msg-card-prev{font-size:12.5px;color:var(--ink-2);line-height:1.5;background:var(--bg-3);border-radius:9px;padding:9px 11px;white-space:pre-wrap;max-height:72px;overflow:hidden}
 .msg-card-prev.empty{color:var(--ink-3);font-style:italic}
 .msg-card-date{font-size:11px;color:var(--ink-3);margin-top:8px}
+
+.resp-btn{width:100%;text-align:left;background:var(--bg-3);border:1px solid transparent;border-radius:9px;padding:8px 11px;font-size:13.5px;color:var(--ink);cursor:pointer;min-height:36px}
+.resp-btn:hover{border-color:var(--accent)}
+.resp-pop{position:absolute;z-index:200;width:280px;background:var(--bg-2);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-lg);overflow:hidden}
+.resp-pop-h{padding:11px 14px 7px;font-size:12px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em}
+.resp-pop-list{max-height:240px;overflow-y:auto;padding:2px 6px}
+.resp-opt{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:9px;cursor:pointer;font-size:13.5px}
+.resp-opt:hover{background:var(--bg-3)}
+.resp-opt input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.resp-pop-f{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--line)}
+.resp-pop-f button{font-size:12.5px;padding:6px 12px;border-radius:8px;cursor:pointer;border:none;background:var(--bg-3);color:var(--ink)}
+.resp-pop-f .btn-primary{background:var(--accent);color:#fff;font-weight:600}
 </style>
 </head>
 <body>
@@ -618,10 +630,14 @@ const isImportant=(t)=>isOpen(t)&&t.flag;
 const statusName=(id)=>(STATUSES.find(s=>s.id===id)||{}).name||id;
 function staleDays(t){const last=t.history?.[t.history.length-1]?.d||t.createdAt;return daysFrom(last)!==null?-daysFrom(last):0}
 function normPerson(n){if(!n)return '';const x=n.trim();if(!x)return '';if(/^(yo|mau|mauricio|mauricio gutiérrez|mauricio gutierrez)$/i.test(x))return 'Yo';return x}
-const isMine=(t)=>normPerson(t.responsible)==='Yo';
+function respList(t){const r=t&&t.responsible?t.responsible:'';return r.split(',').map(s=>normPerson(s)).filter(x=>x)}
+function respHas(t,person){const np=normPerson(person);return respList(t).includes(np)}
+function respLabel(t){const l=respList(t);if(!l.length)return '(sin asignar)';if(l.length===1)return l[0];return l[0]+' +'+(l.length-1)}
+function respFull(t){const l=respList(t);return l.length?l.join(', '):'(sin asignar)'}
+const isMine=(t)=>respList(t).includes('Yo');
 function initials(n){const x=normPerson(n);if(!x)return '?';if(x==='Yo')return 'MG';return x.split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase()}
 function colorFor(name){const x=normPerson(name);if(x==='Yo')return 'var(--accent)';let h=0;for(const c of x)h=(h*31+c.charCodeAt(0))%360;return `hsl(${h} 42% 45%)`}
-function allPeople(){const set=new Set(PEOPLE.map(normPerson).filter(x=>x&&x!=='Yo'));TASKS.forEach(t=>{const p=normPerson(t.responsible);if(p&&p!=='Yo')set.add(p)});return ['Yo',...[...set].sort((a,b)=>a.localeCompare(b))]}
+function allPeople(){const set=new Set(PEOPLE.map(normPerson).filter(x=>x&&x!=='Yo'));TASKS.forEach(t=>{respList(t).forEach(p=>{if(p&&p!=='Yo')set.add(p)})});return ['Yo',...[...set].sort((a,b)=>a.localeCompare(b))]}
 function peopleOptions(sel){let cur=normPerson(sel)||'Yo';const ppl=allPeople();let opts=ppl.map(n=>`<option value="${escapeAttr(n)}"${n===cur?' selected':''}>${n==='Yo'?'Yo (Mauricio)':escapeH(n)}</option>`).join('');if(cur&&!ppl.includes(cur))opts=`<option value="${escapeAttr(cur)}" selected>${escapeH(cur)}</option>`+opts;opts+=`<option value="__new__">➕ Nuevo responsable…</option>`;return opts}
 
 /* ---- SUGERENCIAS (heurística) ---- */
@@ -666,7 +682,7 @@ function renderNav(){
   }
   h+=secHeader('Personas','personas');
   if(!COLLAPSE.personas){
-    allPeople().map(n=>({n,op:TASKS.filter(t=>isOpen(t)&&(normPerson(t.responsible)||'(sin asignar)')===n).length}))
+    allPeople().map(n=>({n,op:TASKS.filter(t=>isOpen(t)&&respHas(t,n)).length}))
       .sort((a,b)=>b.op-a.op)
       .forEach(({n,op})=>{const a=state.view==='personas'&&state.person===n;
       h+=`<button class="nav-item ${a?'active':''}" data-personnav="${escapeAttr(n)}"><span class="av-sm" style="background:${colorFor(n)}">${initials(n)}</span><span style="flex:1">${n==='Yo'?'Yo':escapeH(n)}</span>${op?`<span class="count">${op}</span>`:''}</button>`});
@@ -759,7 +775,7 @@ function renderList(){
   let list=TASKS.slice();
   if(state.search)list=applyFilters(list);
   else if(state.view==='proyectos'&&state.proj)list=applyFilters(list.filter(t=>t.project===state.proj));
-  else if(state.view==='personas'&&state.person)list=applyFilters(list.filter(t=>isOpen(t)&&(normPerson(t.responsible)||'(sin asignar)')===state.person));
+  else if(state.view==='personas'&&state.person)list=applyFilters(list.filter(t=>isOpen(t)&&(state.person==='(sin asignar)'?respList(t).length===0:respHas(t,state.person))));
   else if(state.view==='hoy')list=applyFilters(list.filter(t=>isOpen(t)&&isMine(t)&&t.due&&daysFrom(t.due)<=0));
   else if(state.view==='inbox')list=applyFilters(list.filter(t=>isOpen(t)&&t.project==='rapidos'&&!t.due));
   else list=applyFilters(list);
@@ -791,7 +807,7 @@ function taskRow(t){
       <div class="t-meta">
         <span class="tag tag-proj"><span style="width:7px;height:7px;border-radius:50%;background:${proj(t.project).color}"></span>${projName(t.project)}</span>
         ${t.due?`<span class="due ${dCls}">${svg(I.clock,11)} ${dueLabel(t.due)}</span>`:''}
-        ${sup?`<span class="who sup"><span class="av" style="background:${colorFor(t.responsible)}">${initials(t.responsible)}</span>${escapeH(normPerson(t.responsible)||'(sin asignar)')}</span>`:''}
+        ${sup?`<span class="who sup"><span class="av" style="background:${colorFor(respList(t)[0]||'')}">${initials(respList(t)[0]||'?')}</span>${escapeH(respFull(t))}</span>`:''}
         ${t.nextAction?`<span class="who" style="color:var(--gold)">${svg(I.arrow,11)} ${escapeH(t.nextAction)}</span>`:''}
       </div>
     </div>
@@ -811,7 +827,7 @@ function renderSeguimientos(){
       <button class="check ${isDone(t)?'on':''}" data-check="${t.id}">${svg(I.check,11)}</button>
       <div class="t-body"><div class="t-title">${escapeH(t.title)}</div>
         <div class="t-meta">
-          <span class="who sup"><span class="av" style="background:${colorFor(t.responsible)}">${initials(t.responsible)}</span>${escapeH(normPerson(t.responsible)||t.relatedPerson||'—')}</span>
+          <span class="who sup"><span class="av" style="background:${colorFor(respList(t)[0]||'')}">${initials(respList(t)[0]||'?')}</span>${escapeH(respFull(t)||t.relatedPerson||'—')}</span>
           ${ch&&ch.id?`<span class="tag tag-proj">${ch.name}</span>`:''}
           ${t.lastContact?`<span class="due">Últ. contacto: ${dueLabel(t.lastContact)}</span>`:''}
           ${t.nextReview?`<span class="due ${daysFrom(t.nextReview)<=0?'today':''}">${svg(I.clock,11)} Próx: ${dueLabel(t.nextReview)}</span>`:''}
@@ -824,7 +840,7 @@ function renderSeguimientos(){
 }
 
 function renderPersonView(){
-  let list=applyFilters(TASKS.filter(t=>isOpen(t)&&(normPerson(t.responsible)||'(sin asignar)')===state.person)).sort(byDate);
+  let list=applyFilters(TASKS.filter(t=>isOpen(t)&&(state.person==='(sin asignar)'?respList(t).length===0:respHas(t,state.person)))).sort(byDate);
   let h='';
   if(state.person!=='Yo'&&state.person!=='(sin asignar)')h+=`<div class="proj-toolbar"><button class="del-proj" data-delperson="${escapeAttr(state.person)}">${svg(I.trash,14)} Eliminar persona</button></div>`;
   if(state.person!=='Yo'&&state.person!=='(sin asignar)')h+=`<button class="wa-btn" data-followup="${escapeAttr(state.person)}">${svg(I.chat,16)} Mensaje de seguimiento</button>`;
@@ -872,7 +888,7 @@ function emptyState(title='Todo en orden',sub='No hay nada pendiente en esta vis
 /* ---- PERSONAS ---- */
 function renderPeople(){
   const map={};
-  TASKS.filter(isOpen).forEach(t=>{const p=normPerson(t.responsible)||'(sin asignar)';(map[p]=map[p]||[]).push(t)});
+  TASKS.filter(isOpen).forEach(t=>{const ls=respList(t);if(!ls.length){(map['(sin asignar)']=map['(sin asignar)']||[]).push(t)}else{ls.forEach(p=>{(map[p]=map[p]||[]).push(t)})}});
   let names=Object.keys(map).sort((a,b)=>a==='Yo'?-1:b==='Yo'?1:a.localeCompare(b));
   if(!names.length)return emptyState('Sin personas','Asigna responsables a tus tareas para verlas aquí.');
   return `<div class="people-grid">`+names.map(n=>{
@@ -914,14 +930,14 @@ function dayRow(t){const sup=!isMine(t);const star=t.flag;
     <button class="check" data-check="${t.id}">${svg(I.check,11)}</button>
     <div class="drow-main"><span class="t-title">${escapeH(t.title)}</span>${t.nextAction?`<span class="drow-na">${svg(I.arrow,10)} ${escapeH(t.nextAction)}</span>`:''}${sup&&staleDays(t)>=3?`<span class="wait-badge" title="Esperando respuesta">${staleDays(t)}d</span>`:''}</div>
     <div class="drow-side">
-      ${sup?`<span class="drow-resp"><span class="av" style="background:${colorFor(t.responsible)}">${initials(t.responsible)}</span>${escapeH(normPerson(t.responsible))}</span>`:''}
+      ${sup?`<span class="drow-resp"><span class="av" style="background:${colorFor(respList(t)[0]||'')}">${initials(respList(t)[0]||'?')}</span>${escapeH(respFull(t))}</span>`:''}
       <span class="row-actions"><button class="ra ra-star ${star?'starred':''}" data-act="star" data-id="${t.id}" title="${star?'Quitar prioridad':'Marcar prioridad'}">${svg(I.star,17)}</button><button class="ra ra-snz" data-act="snooze" data-id="${t.id}" title="Mañana">${svg(I.snooze,18)}</button><button class="ra ra-smd" data-act="someday" data-id="${t.id}" title="Algún día">${svg(I.fwd,18)}</button></span>
     </div>
   </div>`;
 }
 function bringTomorrow(){const tmr=addD(1);let n=0;TASKS.forEach(t=>{if(isOpen(t)&&t.due===tmr){t.due=todayStr();t.carried=0;if(t.status==='pospuesto')t.status='no_iniciado';logH(t,'Adelantada a hoy');n++}});if(n){save();render();toast(n+' traídas a hoy')}}
 function followupText(person){
-  const tasks=TASKS.filter(t=>isOpen(t)&&normPerson(t.responsible)===normPerson(person)).sort(byDate);
+  const tasks=TASKS.filter(t=>isOpen(t)&&respHas(t,person)).sort(byDate);
   const first=person.split(/\s+/)[0];
   let txt=`Hola ${first}.\n\nTenemos pendientes los siguientes temas:\n\n`;
   if(!tasks.length)txt+='(Sin tareas pendientes registradas por ahora.)\n';
@@ -941,7 +957,7 @@ function renderMensajes(){
   h+='<div class="msg-grid">';
   people.forEach(p=>{
     const d=DRAFTS[p];
-    const pend=TASKS.filter(t=>isOpen(t)&&normPerson(t.responsible)===normPerson(p)).length;
+    const pend=TASKS.filter(t=>isOpen(t)&&respHas(t,p)).length;
     const hasDraft=d&&d.text&&d.text.trim();
     h+=`<div class="msg-card" data-msgperson="${escapeH(p)}">
       <div class="msg-card-h"><span class="av" style="background:${colorFor(p)}">${initials(p)}</span><div style="flex:1;min-width:0"><div class="msg-card-name">${escapeH(p)}</div><div class="msg-card-meta">${pend} pendiente${pend!==1?'s':''}${hasDraft?' · <span style="color:var(--accent)">borrador guardado</span>':''}</div></div></div>
@@ -993,7 +1009,7 @@ function acard(t,colKey){const sup=!isMine(t);
       <div class="crumb"><span class="cd" style="background:${proj(t.project).color}"></span>Listas › ${projName(t.project)}</div>
       <div class="a-title">${escapeH(t.title)}</div>
       ${colKey==='up'&&t.due?`<div class="a-due">${dueLabel(t.due)}</div>`:''}
-      ${sup?`<div class="who2"><span class="av" style="background:${colorFor(t.responsible)}">${initials(t.responsible)}</span>${escapeH(normPerson(t.responsible))}</div>`:''}
+      ${sup?`<div class="who2"><span class="av" style="background:${colorFor(respList(t)[0]||'')}">${initials(respList(t)[0]||'?')}</span>${escapeH(respFull(t))}</div>`:''}
     </div>
   </div>`;
 }
@@ -1057,7 +1073,7 @@ function dcard(t){const sup=!isMine(t);
   return `<div class="dcard" draggable="true" data-id="${t.id}">
     <div class="dc-title"><span class="md" style="background:${proj(t.project).color}"></span><span>${escapeH(t.title)}</span></div>
     <div class="dc-bot"><button class="mv" data-mv="-1" data-id="${t.id}" title="Día anterior">◀</button>
-      <span class="dc-proj">${sup?escapeH(normPerson(t.responsible)):projName(t.project)}</span>
+      <span class="dc-proj">${sup?escapeH(respFull(t)):projName(t.project)}</span>
       <button class="mv" data-mv="1" data-id="${t.id}" title="Día siguiente">▶</button></div>
   </div>`;
 }
@@ -1129,7 +1145,7 @@ function renderDetail(){
       <div class="det-section"><div class="next-action"><span class="na-ico">${svg(I.arrow,15)}</span><div style="flex:1"><div class="na-l">Próxima acción</div><input id="dNext" value="${escapeAttr(t.nextAction)}" placeholder="¿Cuál es el siguiente paso concreto?"></div></div></div>
       <div class="det-section"><div class="field-grid">
         <div class="field"><label>Proyecto</label><select data-f="project">${opt(PROJECTS,t.project)}</select></div>
-        <div class="field"><label>Responsable</label><select data-f="responsible">${peopleOptions(t.responsible)}</select></div>
+        <div class="field"><label>Responsables</label><button type="button" class="resp-btn" id="respBtn">${escapeH(respFull(t))}</button></div>
         <div class="field"><label>Estado</label><select data-f="status">${opt(STATUSES,t.status)}</select></div>
         <div class="field"><label>Para el día</label><input type="date" data-f="due" value="${t.due}"></div>
         <div class="field"><label>Próx. seguimiento</label><input type="date" data-f="nextReview" value="${t.nextReview}"></div>
@@ -1149,13 +1165,33 @@ function renderDetail(){
     </div>`;
   bindDetail(t);
 }
+
+function openRespPicker(t){
+  const existing=document.getElementById('respPop');if(existing)existing.remove();
+  const sel=respList(t);
+  const ppl=allPeople();
+  const pop=document.createElement('div');pop.id='respPop';pop.className='resp-pop';
+  pop.innerHTML=`<div class="resp-pop-h">Asignar responsables</div>
+    <div class="resp-pop-list">${ppl.map(n=>`<label class="resp-opt"><input type="checkbox" value="${escapeAttr(n)}" ${sel.includes(n)?'checked':''}><span class="av" style="background:${colorFor(n)}">${initials(n)}</span><span>${n==='Yo'?'Yo (Mauricio)':escapeH(n)}</span></label>`).join('')}</div>
+    <div class="resp-pop-f"><button type="button" id="respNew">➕ Nueva persona</button><button type="button" id="respDone" class="btn-primary">Listo</button></div>`;
+  document.body.appendChild(pop);
+  const btn=document.getElementById('respBtn');const r=btn.getBoundingClientRect();
+  pop.style.top=(r.bottom+6+window.scrollY)+'px';pop.style.left=Math.min(r.left,window.innerWidth-300)+'px';
+  const apply=()=>{const checked=[...pop.querySelectorAll('input:checked')].map(c=>c.value);t.responsible=checked.join(', ');logH(t,'Responsables: '+respFull(t));save();render()};
+  pop.querySelectorAll('input').forEach(c=>c.onchange=apply);
+  document.getElementById('respDone').onclick=()=>{pop.remove()};
+  document.getElementById('respNew').onclick=()=>{const n=prompt('Nombre de la nueva persona:');if(n&&n.trim()){const nm=n.trim();if(!PEOPLE.includes(nm)&&normPerson(nm)!=='Yo')PEOPLE.push(nm);const cur=respList(t);cur.push(nm);t.responsible=cur.join(', ');save();pop.remove();openRespPicker(TASKS.find(x=>x.id===t.id))}};
+  setTimeout(()=>{const close=(e)=>{if(!pop.contains(e.target)&&e.target.id!=='respBtn'){pop.remove();document.removeEventListener('mousedown',close)}};document.addEventListener('mousedown',close)},100);
+}
+
 function bindDetail(t){
   const az=(el)=>{el.style.height='auto';el.style.height=el.scrollHeight+'px'};
   const dt=document.getElementById('dTitle');az(dt);dt.oninput=()=>{az(dt);t.title=dt.value;save()};dt.onblur=()=>render();
   const dd=document.getElementById('dDesc');az(dd);dd.oninput=()=>{az(dd);t.description=dd.value;save()};
+  const rb=document.getElementById('respBtn');if(rb)rb.onclick=()=>openRespPicker(t);
   document.getElementById('dNext').oninput=(e)=>{t.nextAction=e.target.value;save()};document.getElementById('dNext').onblur=()=>render();
   document.querySelectorAll('[data-f]').forEach(el=>el.onchange=()=>{const f=el.dataset.f,old=t[f];
-    if(f==='responsible'&&el.value==='__new__'){const n=prompt('Nombre del nuevo responsable:');if(n&&n.trim())t.responsible=n.trim();logH(t,'Responsable: '+valLabel('responsible',old)+' → '+t.responsible);save();render();return}
+    
     t[f]=el.value;
     if(f==='status'&&el.value==='completado'&&!t.completedAt)t.completedAt=todayStr();
     if(f==='status'&&el.value!=='completado')t.completedAt='';
