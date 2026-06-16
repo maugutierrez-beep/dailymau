@@ -407,6 +407,18 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .resp-pop-f{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--line)}
 .resp-pop-f button{font-size:12.5px;padding:6px 12px;border-radius:8px;cursor:pointer;border:none;background:var(--bg-3);color:var(--ink)}
 .resp-pop-f .btn-primary{background:var(--accent);color:#fff;font-weight:600}
+
+.adm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:8px}
+.adm-card{background:var(--bg-2);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.adm-val{font-size:28px;font-weight:700;color:var(--ink);font-family:var(--font-display);line-height:1}
+.adm-label{font-size:12.5px;color:var(--ink-2);margin-top:6px}
+.adm-sub{font-size:11px;color:var(--ink-3);margin-top:2px}
+.adm-table{margin-top:12px;background:var(--bg-2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.adm-table table{width:100%;border-collapse:collapse;font-size:13px}
+.adm-table th{text-align:left;padding:11px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);border-bottom:1px solid var(--line);font-weight:600}
+.adm-table td{padding:11px 14px;border-bottom:1px solid var(--line);color:var(--ink)}
+.adm-table tr:last-child td{border-bottom:none}
+.adm-you{background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700;margin-left:4px}
 </style>
 </head>
 <body>
@@ -509,6 +521,7 @@ const VIEWS=[
   {id:'personas',name:'Personas',ic:'users'},{id:'mensajes',name:'Mensajes',ic:'chat'},{id:'seguimientos',name:'Seguimientos',ic:'loop'},
   {id:'inbox',name:'Inbox',ic:'inbox'},{id:'calendario',name:'Calendario',ic:'cal'},
   {id:'revision',name:'Revisión diaria',ic:'sparkle'},
+  {id:'admin',name:'Admin',ic:'shield',ownerOnly:true},
 ];
 const I={
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
@@ -518,6 +531,7 @@ const I={
   users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
   inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>',
   cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  shield:'<path d="M12 2l8 3v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V5z"/><path d="M9 12l2 2 4-4"/>',
   sparkle:'<path d="M12 3l1.9 5.6L19.5 10l-5.6 1.4L12 17l-1.9-5.6L4.5 10l5.6-1.4z"/>',
   bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
   repeat:'<path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
@@ -573,7 +587,10 @@ async function handleSignup(){const e=document.getElementById('loginEmail').valu
 const CLOUD={url:'https://cwqenbkjvuqtaynxpomq.supabase.co',key:'sb_publishable_WGdKp8XsGWxV0hy-qNZ7-g_X_KMfGYR',table:'dailymau_db',row:'main'};
 function setUserRow(){const _id=getUserId();if(_id){CLOUD.row='u_'+_id;KEY='dailymau_u_'+_id}else{CLOUD.row='main';KEY='dailymau_tasks_v1'}}
 let cloudReady=false,saveT=null,backupT=null,cloudBusy=false;
-function serialize(){return JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE,drafts:DRAFTS})}
+function serialize(){return JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE,drafts:DRAFTS,meta:buildMeta()})}
+function buildMeta(){const prev=window._userMeta||{};const now=new Date().toISOString();
+  return {email:getUserEmail(),uid:getUserId(),createdAt:prev.createdAt||now,lastActive:now,
+    taskCount:TASKS.length,doneCount:TASKS.filter(t=>t.status==='completado').length}}
 function applyParsed(p){if(Array.isArray(p)){TASKS=p;return p.length>0}if(p&&Array.isArray(p.tasks)){TASKS=p.tasks;if(Array.isArray(p.projects)&&p.projects.length)PROJECTS=p.projects;if(Array.isArray(p.people))PEOPLE=p.people;if(p.drafts&&typeof p.drafts==='object')DRAFTS=p.drafts;return p.tasks.length>0}return false}
 function loadLocal(){try{var r=localStorage.getItem(KEY);if(r){var d=JSON.parse(r);applyParsed(d);return true}}catch(e){}return false}
 function saveLocal(){try{localStorage.setItem(KEY,serialize())}catch(e){}}
@@ -589,7 +606,7 @@ async function cloudFetchRow(row){
     if(!j||!j[0]||!j[0].data)return null;
     return typeof j[0].data==='string'?JSON.parse(j[0].data):j[0].data;
   }catch(e){return undefined}}
-function applyCloudData(p){
+function applyCloudData(p){if(p&&p.meta)window._userMeta=p.meta;
   let ct=[],cp=[],cpe=[],dr={};
   if(Array.isArray(p))ct=p;
   else if(p&&Array.isArray(p.tasks)){ct=p.tasks;cp=p.projects||[];cpe=p.people||[];dr=p.drafts||{}}
@@ -735,6 +752,12 @@ function renderNav(){
       h+=`<button class="nav-item ${a?'active':''}" data-personnav="${escapeAttr(n)}"><span class="av-sm" style="background:${colorFor(n)}">${initials(n)}</span><span style="flex:1">${n==='Yo'?'Yo':escapeH(n)}</span>${op?`<span class="count">${op}</span>`:''}</button>`});
     h+=`<button class="nav-item nav-add" id="newPerson"><span class="ico">${svg('<path d="M12 5v14M5 12h14"/>',15)}</span>Nueva persona</button>`;
   }
+  h+=secHeader('Más','mas');
+  if(!COLLAPSE.mas){
+    const owner=getUserEmail().toLowerCase()==='maugutierrez@gmail.com';
+    ['mensajes','seguimientos','revision','todas'].forEach(id=>{const v=VIEWS.find(x=>x.id===id);if(v)h+=navItem(v)});
+    if(owner)h+=navItem(VIEWS.find(v=>v.id==='admin'));
+  }
   document.getElementById('nav').innerHTML=h;
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>go(b.dataset.view));
   const rb=document.querySelector('[data-view="realizadas"]');
@@ -761,7 +784,7 @@ function navItem(v,count){const a=state.view===v.id;return `<button class="nav-i
 function go(v){state.view=v;state.proj=null;state.person=null;state.sel=null;state.filter={};closeSidebar();render()}
 function render(){
   renderNav();updatePeopleList();
-  const titles={dia:['Mi día',fmtDate()],hoy:['Tareas',fmtDate()],realizadas:['Realizadas','Historial de lo completado'],todas:['Todas las pendientes','Vista consolidada por proyecto'],personas:['Personas','Tareas propias y supervisadas'],mensajes:['Mensajes','Borradores guardados por persona'],seguimientos:['Seguimientos','Temas que dependen de otros'],inbox:['Inbox','Captura rápida sin clasificar'],calendario:['Calendario','Tareas por fecha'],revision:['Revisión diaria','Inicio y cierre del día'],proyectos:[state.proj?projName(state.proj):'Proyectos','']};
+  const titles={dia:['Mi día',fmtDate()],hoy:['Tareas',fmtDate()],realizadas:['Realizadas','Historial de lo completado'],todas:['Todas las pendientes','Vista consolidada por proyecto'],personas:['Personas','Tareas propias y supervisadas'],mensajes:['Mensajes','Borradores guardados por persona'],seguimientos:['Seguimientos','Temas que dependen de otros'],inbox:['Inbox','Captura rápida sin clasificar'],calendario:['Calendario','Tareas por fecha'],revision:['Revisión diaria','Inicio y cierre del día'],admin:['Panel de administrador','Usuarios y métricas de uso'],proyectos:[state.proj?projName(state.proj):'Proyectos','']};
   let [title,sub]=titles[state.view]||['',''];
   if(state.view==='personas'&&state.person){title=state.person==='Yo'?'Mis tareas':state.person;sub=state.person==='Yo'?'Pendientes a tu cargo':'Tareas que supervisas'}
   document.getElementById('viewTitle').textContent=title;
@@ -773,6 +796,7 @@ function render(){
   else if(state.view==='hoy'){scroll.innerHTML=renderBoard();bindBoard()}
   else if(state.view==='realizadas'){scroll.innerHTML=renderDone();bindTasks()}
   else if(state.view==='calendario'){scroll.innerHTML=renderCalendar();bindMini()}
+  else if(state.view==='admin'){scroll.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink-3)">Cargando métricas…</div>';loadAdmin()}
   else if(state.view==='revision'){scroll.innerHTML=renderReview();bindReview()}
   else if(state.view==='mensajes'){scroll.innerHTML=renderMensajes();bindMensajes()}
   else if(state.view==='personas'&&!state.person){scroll.innerHTML=renderPeople();bindPeople()}
@@ -1146,6 +1170,57 @@ function moveDay(id,delta){const t=TASKS.find(x=>x.id===id);if(!t)return;
   t.due=nd;t.carried=0;if(t.status==='pospuesto')t.status='no_iniciado';logH(t,'Movida a '+dueLabel(nd));save();render();toast(dueLabel(nd))}
 
 /* ---- REVISIÓN ---- */
+
+async function loadAdmin(){
+  if(getUserEmail().toLowerCase()!=='maugutierrez@gmail.com'){document.getElementById('scroll').innerHTML=emptyState('Acceso restringido','Esta sección es solo para el administrador.');return}
+  let rows=[];
+  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?select=id,data,updated_at`,{headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key}});
+    rows=await r.json();}catch(e){document.getElementById('scroll').innerHTML=emptyState('Error','No se pudieron cargar los datos.');return}
+  // Solo filas de usuario (u_*)
+  const users=rows.filter(r=>String(r.id).startsWith('u_')).map(r=>{
+    let d=r.data;try{if(typeof d==='string')d=JSON.parse(d)}catch(e){d={}}
+    const m=(d&&d.meta)||{};const tasks=(d&&d.tasks)||[];
+    return {id:r.id,email:m.email||'(sin correo)',createdAt:m.createdAt||null,lastActive:m.lastActive||r.updated_at,
+      taskCount:tasks.length,doneCount:tasks.filter(t=>t.status==='completado').length,updated:r.updated_at};
+  });
+  document.getElementById('scroll').innerHTML=renderAdmin(users);
+}
+function renderAdmin(users){
+  const now=Date.now();const DAY=86400000;
+  const total=users.length;
+  const active7=users.filter(u=>u.lastActive&&(now-new Date(u.lastActive))<7*DAY).length;
+  const active1=users.filter(u=>u.lastActive&&(now-new Date(u.lastActive))<DAY).length;
+  const new7=users.filter(u=>u.createdAt&&(now-new Date(u.createdAt))<7*DAY).length;
+  const totalTasks=users.reduce((s,u)=>s+u.taskCount,0);
+  const totalDone=users.reduce((s,u)=>s+u.doneCount,0);
+  const avgTasks=total?Math.round(totalTasks/total):0;
+  const card=(label,val,sub)=>`<div class="adm-card"><div class="adm-val">${val}</div><div class="adm-label">${label}</div>${sub?`<div class="adm-sub">${sub}</div>`:''}</div>`;
+  let h='<div class="adm-grid">';
+  h+=card('Usuarios totales',total);
+  h+=card('Activos hoy',active1,'últimas 24h');
+  h+=card('Activos 7 días',active7);
+  h+=card('Nuevos 7 días',new7);
+  h+=card('Tareas creadas',totalTasks,'todas las cuentas');
+  h+=card('Completadas',totalDone);
+  h+=card('Promedio tareas',avgTasks,'por usuario');
+  const retention=total?Math.round(active7/total*100):0;
+  h+=card('Retención 7d',retention+'%');
+  h+='</div>';
+  // Tabla
+  h+='<div style="margin-top:24px;font-size:13px;font-weight:600;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em">Usuarios registrados</div>';
+  if(!users.length){h+=emptyState('Aún no hay usuarios','Cuando alguien cree una cuenta aparecerá aquí.');return h}
+  const fmt=(d)=>d?new Date(d).toLocaleDateString('es',{day:'numeric',month:'short',year:'2-digit'}):'—';
+  const fmtAct=(d)=>{if(!d)return '—';const diff=(now-new Date(d))/DAY;if(diff<1)return 'Hoy';if(diff<2)return 'Ayer';if(diff<30)return Math.floor(diff)+'d';return fmt(d)};
+  const sorted=users.sort((a,b)=>new Date(b.lastActive||0)-new Date(a.lastActive||0));
+  h+='<div class="adm-table"><table><thead><tr><th>Correo</th><th>Registro</th><th>Última actividad</th><th>Tareas</th><th>Hechas</th></tr></thead><tbody>';
+  sorted.forEach(u=>{
+    const isYou=u.email.toLowerCase()==='maugutierrez@gmail.com';
+    h+=`<tr><td>${escapeH(u.email)}${isYou?' <span class="adm-you">tú</span>':''}</td><td>${fmt(u.createdAt)}</td><td>${fmtAct(u.lastActive)}</td><td>${u.taskCount}</td><td>${u.doneCount}</td></tr>`;
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+
 function renderReview(){
   const open=TASKS.filter(isOpen),am=state.revMode==='am';
   let h=`<div class="review-toggle"><button class="${am?'on':''}" data-rev="am">☀ Mañana</button><button class="${!am?'on':''}" data-rev="pm">🌙 Noche</button></div>`;
