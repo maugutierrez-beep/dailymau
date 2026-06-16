@@ -538,7 +538,7 @@ const I={
 const svg=(p,w=16)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="${w}" height="${w}">${p}</svg>`;
 
 let TASKS=[],PEOPLE=[],DRAFTS={},state={view:'dia',sel:null,filter:{},search:'',proj:null,person:null,revMode:'am',showDone:false};
-const KEY='dailymau_tasks_v1';
+let KEY='dailymau_tasks_v1';
 function localISO(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 const todayStr=()=>localISO(new Date());
 const uid=()=>'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -547,6 +547,8 @@ const uid=()=>'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 /* ---- AUTENTICACIÓN ---- */
 let SESSION=null;
 function loadSession(){try{const x=localStorage.getItem('dailymau_session');if(x)SESSION=JSON.parse(x)}catch(e){}}
+function getUserId(){try{if(!SESSION||!SESSION.access_token)return null;const p=JSON.parse(atob(SESSION.access_token.split('.')[1]));return p.sub||p.user_id||null}catch(e){return null}}
+function getUserEmail(){try{if(!SESSION||!SESSION.access_token)return '';const p=JSON.parse(atob(SESSION.access_token.split('.')[1]));return p.email||''}catch(e){return ''}}
 function saveSession(d){SESSION=d;try{localStorage.setItem('dailymau_session',JSON.stringify(d))}catch(e){}}
 function clearSession(){SESSION=null;localStorage.removeItem('dailymau_session')}
 function hGet(){return{apikey:CLOUD.key,Authorization:'Bearer '+(SESSION&&SESSION.access_token?SESSION.access_token:CLOUD.key)}}
@@ -560,39 +562,48 @@ async function signUp(email,pass){
 function signInGoogle(){window.location.href=CLOUD.url+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(window.location.origin+window.location.pathname)}
 function checkOAuthCallback(){const h=window.location.hash;if(h&&h.includes('access_token')){const p=new URLSearchParams(h.substring(1));const at=p.get('access_token');const rt=p.get('refresh_token');if(at){saveSession({access_token:at,refresh_token:rt});window.history.replaceState(null,'',window.location.pathname);return true}}return false}
 async function refreshToken(){if(!SESSION||!SESSION.refresh_token)return false;try{const r=await fetch(CLOUD.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:CLOUD.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:SESSION.refresh_token})});if(!r.ok)return false;saveSession(await r.json());return true}catch(e){return false}}
-async function signOut(){if(SESSION&&SESSION.access_token){try{await fetch(CLOUD.url+'/auth/v1/logout',{method:'POST',headers:hGet()})}catch(e){}}clearSession();showLogin()}
+async function signOut(){flushSave();if(SESSION&&SESSION.access_token){try{await fetch(CLOUD.url+'/auth/v1/logout',{method:'POST',headers:hGet()})}catch(e){}}clearSession();TASKS=[];PROJECTS=defaultProjects();PEOPLE=[];DRAFTS={};cloudReady=false;CLOUD.row='main';showLogin()}
 function showLogin(){document.getElementById('loginScreen').classList.remove('hidden');document.getElementById('app').classList.add('hidden')}
-function startApp(){document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');if(!loadLocal()){TASKS=seed();saveLocal()}rollover();render();cloudInit();scheduleRefreshToken()}
+function startApp(){setUserRow();document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');TASKS=[];PROJECTS=defaultProjects();PEOPLE=[];DRAFTS={};loadLocal();rollover();render();cloudInit();scheduleRefreshToken()}
 function scheduleRefreshToken(){const ms=SESSION&&SESSION.expires_in?(SESSION.expires_in-120)*1000:3300000;setTimeout(async()=>{if(await refreshToken())scheduleRefreshToken();else showLogin()},ms>0?ms:60000)}
 function showError(msg){document.getElementById('loginError').textContent=typeof msg==='string'?msg:(msg&&msg.message?msg.message:'Error')}
 async function handleLogin(){const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPass').value;if(!e||!p){showError('Ingresa correo y contraseña');return}document.getElementById('loginBtn').textContent='Ingresando…';try{await signIn(e,p);startApp()}catch(x){showError(x)}document.getElementById('loginBtn').textContent='Iniciar sesión'}
 async function handleSignup(){const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPass').value;if(!e||!p){showError('Ingresa correo y contraseña');return}if(p.length<6){showError('Mínimo 6 caracteres en la contraseña');return}document.getElementById('signupBtn').textContent='Creando…';try{const d=await signUp(e,p);if(d.access_token)startApp();else showError('Revisa tu correo para confirmar la cuenta')}catch(x){showError(x)}document.getElementById('signupBtn').textContent='Crear cuenta'}
 
 const CLOUD={url:'https://cwqenbkjvuqtaynxpomq.supabase.co',key:'sb_publishable_WGdKp8XsGWxV0hy-qNZ7-g_X_KMfGYR',table:'dailymau_db',row:'main'};
+function setUserRow(){const _id=getUserId();if(_id){CLOUD.row='u_'+_id;KEY='dailymau_u_'+_id}else{CLOUD.row='main';KEY='dailymau_tasks_v1'}}
 let cloudReady=false,saveT=null,backupT=null,cloudBusy=false;
 function serialize(){return JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE,drafts:DRAFTS})}
 function applyParsed(p){if(Array.isArray(p)){TASKS=p;return p.length>0}if(p&&Array.isArray(p.tasks)){TASKS=p.tasks;if(Array.isArray(p.projects)&&p.projects.length)PROJECTS=p.projects;if(Array.isArray(p.people))PEOPLE=p.people;if(p.drafts&&typeof p.drafts==='object')DRAFTS=p.drafts;return p.tasks.length>0}return false}
-function loadLocal(){var keys=['dailymau_tasks_v1','dailymau_v3'];var best=null,bestLen=0;for(var i=0;i<keys.length;i++){try{var r=localStorage.getItem(keys[i]);if(r){var d=JSON.parse(r);var t=Array.isArray(d)?d:(d.tasks||[]);if(t.length>bestLen){best=d;bestLen=t.length}}}catch(e){}}if(!best)return false;applyParsed(best);return true}
-function saveLocal(){try{var d=serialize();localStorage.setItem('dailymau_tasks_v1',d);localStorage.setItem('dailymau_v3',d)}catch(e){}}
+function loadLocal(){try{var r=localStorage.getItem(KEY);if(r){var d=JSON.parse(r);applyParsed(d);return true}}catch(e){}return false}
+function saveLocal(){try{localStorage.setItem(KEY,serialize())}catch(e){}}
 function save(){saveLocal();scheduleCloud()}
 function setCloud(s){const el=document.getElementById('cloud');if(!el)return;
   const map={saving:['saving','Guardando…'],saved:['ok','Sincronizado'],error:['err','Sin conexión · local'],off:['','Solo local']};
   const d=map[s]||['',''];el.innerHTML=`<span class="cloud-dot ${d[0]}"></span>${d[1]}${s==='saved'?' · '+new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):''}`}
 function scheduleCloud(){if(!cloudReady)return;clearTimeout(saveT);setCloud('saving');saveT=setTimeout(cloudSave,250);
   clearTimeout(backupT);backupT=setTimeout(()=>{cloudSave()},2500)}
+async function cloudFetchRow(row){
+  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${row}&select=data`,{headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key}});
+    if(!r.ok)return undefined;const j=await r.json();
+    if(!j||!j[0]||!j[0].data)return null;
+    return typeof j[0].data==='string'?JSON.parse(j[0].data):j[0].data;
+  }catch(e){return undefined}}
+function applyCloudData(p){
+  let ct=[],cp=[],cpe=[],dr={};
+  if(Array.isArray(p))ct=p;
+  else if(p&&Array.isArray(p.tasks)){ct=p.tasks;cp=p.projects||[];cpe=p.people||[];dr=p.drafts||{}}
+  if(!ct.length)return false;
+  TASKS=ct;if(cp.length)PROJECTS=cp;if(cpe.length)PEOPLE=cpe;DRAFTS=dr;
+  saveLocal();return true;
+}
 async function cloudLoad(){
   if(CLOUD.key.startsWith('__'))return false;
-  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}&select=data`,{headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key}});
-    if(!r.ok)throw 0;const j=await r.json();
-    if(!j||!j[0]||!j[0].data)return null;
-    const p=typeof j[0].data==='string'?JSON.parse(j[0].data):j[0].data;
-    let ct=[],cp=[],cpe=[];
-    if(Array.isArray(p))ct=p;
-    else if(p&&Array.isArray(p.tasks)){ct=p.tasks;cp=p.projects||[];cpe=p.people||[]}
-    if(!ct.length)return false;
-    TASKS=ct;if(cp.length)PROJECTS=cp;if(cpe.length)PEOPLE=cpe;if(p&&p.drafts)DRAFTS=p.drafts;
-    saveLocal();return true;
-  }catch(e){return false}}
+  const p=await cloudFetchRow(CLOUD.row);
+  if(p===undefined)return false;          // error de red
+  if(p===null)return null;                // fila no existe / vacía → primera vez
+  return applyCloudData(p)?true:null;
+}
 async function cloudSave(retry){if(!cloudReady)return;if(cloudBusy){clearTimeout(saveT);saveT=setTimeout(cloudSave,300);return}cloudBusy=true;setCloud('saving');
   const payload=JSON.stringify({data:serialize(),updated_at:new Date().toISOString()});
   try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'return=minimal'},body:payload});
@@ -611,9 +622,40 @@ window.addEventListener('beforeunload',flushSave);
 async function cloudInit(){
   if(CLOUD.key.startsWith('__')){cloudReady=false;setCloud('off');return}
   const res=await cloudLoad();
-  if(res===true){cloudReady=true;rollover();render();setCloud('saved')}
-  else if(res===null){cloudReady=true;if(TASKS.length){await cloudSave();setCloud('saved')}else{setCloud('off')}}
-  else{cloudReady=TASKS.length>0;setCloud(TASKS.length>0?'saved':'error')}}
+  if(res===true){cloudReady=true;rollover();render();setCloud('saved');return}
+  if(res===false){cloudReady=TASKS.length>0;setCloud(TASKS.length>0?'saved':'error');return}
+  // res===null → fila del usuario vacía (primera vez en esta cuenta)
+  cloudReady=true;
+  // Intento de migración: si es el dueño original, traer datos de 'main'
+  const email=getUserEmail().toLowerCase();
+  const isOwner=email==='maugutierrez@gmail.com';
+  if(isOwner && !TASKS.length){
+    const legacy=await cloudFetchRow('main');
+    if(legacy && applyCloudData(legacy)){rollover();render();await cloudSave();setCloud('saved');return}
+  }
+  if(TASKS.length){await cloudSave();setCloud('saved');return}
+  // Usuario nuevo de verdad → onboarding
+  seedOnboarding();rollover();render();await cloudSave();setCloud('saved');
+}
+
+function defaultProjects(){return [
+  {id:'general',name:'General',color:'#6b7280'},
+  {id:'trabajo',name:'Trabajo',color:'#1f3a5f'},
+  {id:'personal',name:'Personal',color:'#3f9d52'},
+  {id:'rapidos',name:'Pendientes rápidos',color:'#d4923e'}
+]}
+function seedOnboarding(){
+  const today=todayStr();const tmr=addD(1);
+  PROJECTS=defaultProjects();PEOPLE=[];DRAFTS={};
+  TASKS=[
+    {id:uid(),title:'👋 ¡Bienvenido! Marca esta tarea como hecha y mira el confeti',description:'',project:'general',type:'tarea',flag:true,status:'no_iniciado',createdAt:today,due:today,responsible:'Yo',nextAction:'Toca el círculo de la izquierda',notes:[],links:'',history:[]},
+    {id:uid(),title:'➕ Crea tu primera tarea con el botón "Agregar tarea"',description:'',project:'general',type:'tarea',flag:false,status:'no_iniciado',createdAt:today,due:today,responsible:'Yo',nextAction:'',notes:[],links:'',history:[]},
+    {id:uid(),title:'⭐ Toca la estrella para marcar una tarea como prioridad',description:'',project:'trabajo',type:'tarea',flag:false,status:'no_iniciado',createdAt:today,due:today,responsible:'Yo',nextAction:'',notes:[],links:'',history:[]},
+    {id:uid(),title:'⏰ Pospón esta tarea a mañana con el botón naranja',description:'',project:'personal',type:'tarea',flag:false,status:'no_iniciado',createdAt:today,due:today,responsible:'Yo',nextAction:'',notes:[],links:'',history:[]},
+    {id:uid(),title:'📧 Recibe cada mañana un resumen de tus tareas por correo',description:'Configúralo en ajustes.',project:'personal',type:'tarea',flag:false,status:'no_iniciado',createdAt:today,due:tmr,responsible:'Yo',nextAction:'',notes:[],links:'',history:[]}
+  ];
+  saveLocal();
+}
 
 function seed(){return []}
 
