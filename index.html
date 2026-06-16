@@ -569,7 +569,7 @@ async function handleLogin(){const e=document.getElementById('loginEmail').value
 async function handleSignup(){const e=document.getElementById('loginEmail').value.trim(),p=document.getElementById('loginPass').value;if(!e||!p){showError('Ingresa correo y contraseña');return}if(p.length<6){showError('Mínimo 6 caracteres en la contraseña');return}document.getElementById('signupBtn').textContent='Creando…';try{const d=await signUp(e,p);if(d.access_token)startApp();else showError('Revisa tu correo para confirmar la cuenta')}catch(x){showError(x)}document.getElementById('signupBtn').textContent='Crear cuenta'}
 
 const CLOUD={url:'https://cwqenbkjvuqtaynxpomq.supabase.co',key:'sb_publishable_WGdKp8XsGWxV0hy-qNZ7-g_X_KMfGYR',table:'dailymau_db',row:'main'};
-let cloudReady=false,saveT=null;
+let cloudReady=false,saveT=null,backupT=null,cloudBusy=false;
 function serialize(){return JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE,drafts:DRAFTS})}
 function applyParsed(p){if(Array.isArray(p)){TASKS=p;return p.length>0}if(p&&Array.isArray(p.tasks)){TASKS=p.tasks;if(Array.isArray(p.projects)&&p.projects.length)PROJECTS=p.projects;if(Array.isArray(p.people))PEOPLE=p.people;if(p.drafts&&typeof p.drafts==='object')DRAFTS=p.drafts;return p.tasks.length>0}return false}
 function loadLocal(){var keys=['dailymau_tasks_v1','dailymau_v3'];var best=null,bestLen=0;for(var i=0;i<keys.length;i++){try{var r=localStorage.getItem(keys[i]);if(r){var d=JSON.parse(r);var t=Array.isArray(d)?d:(d.tasks||[]);if(t.length>bestLen){best=d;bestLen=t.length}}}catch(e){}}if(!best)return false;applyParsed(best);return true}
@@ -578,7 +578,8 @@ function save(){saveLocal();scheduleCloud()}
 function setCloud(s){const el=document.getElementById('cloud');if(!el)return;
   const map={saving:['saving','Guardando…'],saved:['ok','Sincronizado'],error:['err','Sin conexión · local'],off:['','Solo local']};
   const d=map[s]||['',''];el.innerHTML=`<span class="cloud-dot ${d[0]}"></span>${d[1]}${s==='saved'?' · '+new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):''}`}
-function scheduleCloud(){if(!cloudReady)return;clearTimeout(saveT);setCloud('saving');saveT=setTimeout(cloudSave,400)}
+function scheduleCloud(){if(!cloudReady)return;clearTimeout(saveT);setCloud('saving');saveT=setTimeout(cloudSave,250);
+  clearTimeout(backupT);backupT=setTimeout(()=>{cloudSave()},2500)}
 async function cloudLoad(){
   if(CLOUD.key.startsWith('__'))return false;
   try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}&select=data`,{headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key}});
@@ -592,9 +593,13 @@ async function cloudLoad(){
     TASKS=ct;if(cp.length)PROJECTS=cp;if(cpe.length)PEOPLE=cpe;if(p&&p.drafts)DRAFTS=p.drafts;
     saveLocal();return true;
   }catch(e){return false}}
-async function cloudSave(){if(!cloudReady)return;setCloud('saving');
-  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({data:serialize(),updated_at:new Date().toISOString()})});
-    setCloud(r.ok?'saved':'error')}catch(e){setCloud('error')}}
+async function cloudSave(retry){if(!cloudReady)return;if(cloudBusy){clearTimeout(saveT);saveT=setTimeout(cloudSave,300);return}cloudBusy=true;setCloud('saving');
+  const payload=JSON.stringify({data:serialize(),updated_at:new Date().toISOString()});
+  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'return=minimal'},body:payload});
+    cloudBusy=false;
+    if(r.ok){setCloud('saved')}
+    else{if(!retry){cloudBusy=false;return cloudSave(true)}setCloud('error')}
+  }catch(e){cloudBusy=false;if(!retry){await new Promise(r=>setTimeout(r,800));return cloudSave(true)}setCloud('error')}}
 function flushSave(){if(!cloudReady)return;clearTimeout(saveT);
   try{fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',
     headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'return=minimal'},
@@ -1179,7 +1184,7 @@ function openRespPicker(t){
   pop.style.top=(r.bottom+6+window.scrollY)+'px';pop.style.left=Math.min(r.left,window.innerWidth-300)+'px';
   const apply=()=>{const checked=[...pop.querySelectorAll('input:checked')].map(c=>c.value);t.responsible=checked.join(', ');logH(t,'Responsables: '+respFull(t));save();render()};
   pop.querySelectorAll('input').forEach(c=>c.onchange=apply);
-  document.getElementById('respDone').onclick=()=>{pop.remove()};
+  document.getElementById('respDone').onclick=()=>{pop.remove();cloudSave()};
   document.getElementById('respNew').onclick=()=>{const n=prompt('Nombre de la nueva persona:');if(n&&n.trim()){const nm=n.trim();if(!PEOPLE.includes(nm)&&normPerson(nm)!=='Yo')PEOPLE.push(nm);const cur=respList(t);cur.push(nm);t.responsible=cur.join(', ');save();pop.remove();openRespPicker(TASKS.find(x=>x.id===t.id))}};
   setTimeout(()=>{const close=(e)=>{if(!pop.contains(e.target)&&e.target.id!=='respBtn'){pop.remove();document.removeEventListener('mousedown',close)}};document.addEventListener('mousedown',close)},100);
 }
