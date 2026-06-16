@@ -419,6 +419,17 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .adm-table td{padding:11px 14px;border-bottom:1px solid var(--line);color:var(--ink)}
 .adm-table tr:last-child td{border-bottom:none}
 .adm-you{background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:700;margin-left:4px}
+
+.mini-badge{font-size:10.5px;font-weight:600;color:var(--ink-3);background:var(--bg-3);padding:1px 6px;border-radius:20px;margin-left:6px;flex-shrink:0;white-space:nowrap}
+.subt-list{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+.subt{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:8px;font-size:13.5px;cursor:pointer}
+.subt:hover{background:var(--bg-3)}
+.subt input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.subt span{flex:1}
+.subt-done{text-decoration:line-through;color:var(--ink-3)}
+.subt-del{opacity:0;background:none;border:none;color:var(--ink-3);cursor:pointer;padding:2px;display:grid;place-items:center}
+.subt:hover .subt-del{opacity:1}
+.subt-del:hover{color:var(--danger,#d4524a)}
 </style>
 </head>
 <body>
@@ -999,7 +1010,7 @@ function renderDay(){
 function dayRow(t){const sup=!isMine(t);const star=t.flag;
   return `<div class="task drow ${star?'pinned':''}" data-id="${t.id}" draggable="true">
     <button class="check" data-check="${t.id}">${svg(I.check,11)}</button>
-    <div class="drow-main"><span class="t-title">${escapeH(t.title)}</span>${t.nextAction?`<span class="drow-na">${svg(I.arrow,10)} ${escapeH(t.nextAction)}</span>`:''}${sup&&staleDays(t)>=3?`<span class="wait-badge" title="Esperando respuesta">${staleDays(t)}d</span>`:''}</div>
+    <div class="drow-main"><span class="t-title">${escapeH(t.title)}</span>${t.repeat?`<span class="mini-badge" title="Se repite">↻</span>`:''}${(t.subtasks&&t.subtasks.length)?`<span class="mini-badge" title="Subtareas">☑ ${t.subtasks.filter(s=>s.done).length}/${t.subtasks.length}</span>`:''}${t.nextAction?`<span class="drow-na">${svg(I.arrow,10)} ${escapeH(t.nextAction)}</span>`:''}${sup&&staleDays(t)>=3?`<span class="wait-badge" title="Esperando respuesta">${staleDays(t)}d</span>`:''}</div>
     <div class="drow-side">
       ${sup?`<span class="drow-resp"><span class="av" style="background:${colorFor(respList(t)[0]||'')}">${initials(respList(t)[0]||'?')}</span>${escapeH(respFull(t))}</span>`:''}
       <span class="row-actions"><button class="ra ra-star ${star?'starred':''}" data-act="star" data-id="${t.id}" title="${star?'Quitar prioridad':'Marcar prioridad'}">${svg(I.star,17)}</button><button class="ra ra-snz" data-act="snooze" data-id="${t.id}" title="Mañana">${svg(I.snooze,18)}</button><button class="ra ra-smd" data-act="someday" data-id="${t.id}" title="Algún día">${svg(I.fwd,18)}</button></span>
@@ -1265,11 +1276,16 @@ function renderDetail(){
       <textarea class="det-title" id="dTitle" rows="1">${escapeH(t.title)}</textarea>
       <textarea class="det-desc" id="dDesc" placeholder="Añade una descripción…">${escapeH(t.description)}</textarea>
       <div class="det-section"><div class="next-action"><span class="na-ico">${svg(I.arrow,15)}</span><div style="flex:1"><div class="na-l">Próxima acción</div><input id="dNext" value="${escapeAttr(t.nextAction)}" placeholder="¿Cuál es el siguiente paso concreto?"></div></div></div>
+      <div class="det-section"><div class="det-label">Subtareas${(t.subtasks&&t.subtasks.length)?` <span style="color:var(--ink-3);font-weight:400">(${t.subtasks.filter(s=>s.done).length}/${t.subtasks.length})</span>`:''}</div>
+        <div class="subt-list">${(t.subtasks||[]).map((s,i)=>`<label class="subt"><input type="checkbox" data-subt="${i}" ${s.done?'checked':''}><span class="${s.done?'subt-done':''}">${escapeH(s.text)}</span><button class="subt-del" data-subtdel="${i}">${svg('<path d="M18 6 6 18M6 6l12 12"/>',12)}</button></label>`).join('')}</div>
+        <div class="note-add"><input id="dSubt" placeholder="Agregar subtarea…"><button id="dSubtAdd">Añadir</button></div>
+      </div>
       <div class="det-section"><div class="field-grid">
         <div class="field"><label>Proyecto</label><select data-f="project">${opt(PROJECTS,t.project)}</select></div>
         <div class="field"><label>Responsables</label><button type="button" class="resp-btn" id="respBtn">${escapeH(respFull(t))}</button></div>
         <div class="field"><label>Estado</label><select data-f="status">${opt(STATUSES,t.status)}</select></div>
         <div class="field"><label>Para el día</label><input type="date" data-f="due" value="${t.due}"></div>
+        <div class="field"><label>Repetir</label><select data-f="repeat"><option value="" ${!t.repeat?'selected':''}>No repetir</option><option value="daily" ${t.repeat==='daily'?'selected':''}>Cada día</option><option value="weekly" ${t.repeat==='weekly'?'selected':''}>Cada semana</option><option value="biweekly" ${t.repeat==='biweekly'?'selected':''}>Cada 2 semanas</option><option value="monthly" ${t.repeat==='monthly'?'selected':''}>Cada mes</option></select></div>
         <div class="field"><label>Próx. seguimiento</label><input type="date" data-f="nextReview" value="${t.nextReview}"></div>
         <div class="field"><label>Persona relacionada</label><input data-f="relatedPerson" value="${escapeAttr(t.relatedPerson)}"></div>
         <div class="field"><label>Canal</label><select data-f="channel">${opt(CHANNELS,t.channel)}</select></div>
@@ -1319,6 +1335,12 @@ function bindDetail(t){
     if(f==='status'&&el.value!=='completado')t.completedAt='';
     logH(t,`${labelF(f)}: ${valLabel(f,old)} → ${valLabel(f,el.value)}`);save();render()});
   document.getElementById('dNoteAdd').onclick=addNote;document.getElementById('dNote').onkeydown=(e)=>{if(e.key==='Enter')addNote()};
+  // Subtareas
+  const subAdd=document.getElementById('dSubtAdd');
+  function addSubt(){const inp=document.getElementById('dSubt');const v=inp.value.trim();if(!v)return;t.subtasks=t.subtasks||[];t.subtasks.push({text:v,done:false});save();render()}
+  if(subAdd){subAdd.onclick=addSubt;document.getElementById('dSubt').onkeydown=(e)=>{if(e.key==='Enter')addSubt()}}
+  document.querySelectorAll('[data-subt]').forEach(c=>c.onchange=()=>{const i=+c.dataset.subt;t.subtasks[i].done=c.checked;save();render()});
+  document.querySelectorAll('[data-subtdel]').forEach(b=>b.onclick=()=>{const i=+b.dataset.subtdel;t.subtasks.splice(i,1);save();render()});
   function addNote(){const v=document.getElementById('dNote').value.trim();if(!v)return;t.notes=t.notes||[];t.notes.push({date:todayStr(),text:v});logH(t,'Nota agregada');save();render()}
   document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{const a=b.dataset.d;
     if(a==='close'){state.sel=null;render()}
@@ -1329,12 +1351,14 @@ function bindDetail(t){
     else if(a==='delete'){const tk=TASKS.find(x=>x.id===t.id);if(tk){tk.deleted=Date.now();state.sel=null;save();render();toast('Tarea eliminada',()=>{delete tk.deleted;save();render();toast('Restaurada ✓')})}}
     else if(a==='dup'){const c=JSON.parse(JSON.stringify(t));c.id=uid();c.title+=' (copia)';c.history=[{d:todayStr(),t:'Duplicada'}];c.completedAt='';c.status='no_iniciado';c.carried=0;TASKS.unshift(c);state.sel=c.id;save();render();toast('Duplicada')}});
 }
-function labelF(f){return {project:'Proyecto',type:'Tipo',status:'Estado',due:'Día',nextReview:'Próx. seguimiento',responsible:'Responsable',relatedPerson:'Persona',channel:'Canal',links:'Enlace'}[f]||f}
-function valLabel(f,v){if(f==='project')return projName(v);if(f==='type')return typeOf(v).name;if(f==='status')return statusName(v);return v||'—'}
+function labelF(f){return {project:'Proyecto',type:'Tipo',status:'Estado',due:'Día',nextReview:'Próx. seguimiento',responsible:'Responsable',relatedPerson:'Persona',channel:'Canal',links:'Enlace',repeat:'Repetir'}[f]||f}
+function valLabel(f,v){if(f==='project')return projName(v);if(f==='type')return typeOf(v).name;if(f==='status')return statusName(v);if(f==='repeat')return({daily:'Cada día',weekly:'Cada semana',biweekly:'Cada 2 semanas',monthly:'Cada mes'}[v]||'No repetir');return v||'—'}
 function logH(t,txt){t.history=t.history||[];t.history.push({d:todayStr(),t:txt})}
 
 /* ---- ACCIONES ---- */
-function toggleComplete(id){const t=TASKS.find(x=>x.id===id);if(!t)return;if(isDone(t)){t.status='en_proceso';t.completedAt='';logH(t,'Reabierta')}else{t.status='completado';t.completedAt=todayStr();logH(t,'Realizada')}save()}
+function nextRepeatDate(base,rep){const d=new Date((base||todayStr())+'T00:00');if(rep==='daily')d.setDate(d.getDate()+1);else if(rep==='weekly')d.setDate(d.getDate()+7);else if(rep==='biweekly')d.setDate(d.getDate()+14);else if(rep==='monthly')d.setMonth(d.getMonth()+1);else return null;return localISO(d)}
+function spawnRecurrence(t){if(!t.repeat)return;const nd=nextRepeatDate(t.due||todayStr(),t.repeat);if(!nd)return;const c=JSON.parse(JSON.stringify(t));c.id=uid();c.status='no_iniciado';c.completedAt='';c.carried=0;c.due=nd;c.createdAt=todayStr();c.history=[{d:todayStr(),t:'Creada (recurrente)'}];if(c.subtasks)c.subtasks.forEach(s=>s.done=false);TASKS.unshift(c)}
+function toggleComplete(id){const t=TASKS.find(x=>x.id===id);if(!t)return;if(isDone(t)){t.status='en_proceso';t.completedAt='';logH(t,'Reabierta')}else{t.status='completado';t.completedAt=todayStr();logH(t,'Realizada');spawnRecurrence(t)}save()}
 function snooze(id){const t=TASKS.find(x=>x.id===id);if(!t)return;t.due=addD(1);if(t.status==='no_iniciado')t.status='pospuesto';logH(t,'Pasada a mañana');save()}
 function toFollow(id){const t=TASKS.find(x=>x.id===id);if(!t)return;t.type='seguimiento';t.status='esperando';if(!t.nextReview)t.nextReview=addD(2);if(!t.lastContact)t.lastContact=todayStr();logH(t,'Convertida en seguimiento');save()}
 function delegate(id){const t=TASKS.find(x=>x.id===id);if(!t)return;const who=prompt('¿A quién se la asignas / quién es responsable?',isMine(t)?'':t.responsible);if(who===null)return;t.responsible=who.trim()||'(sin asignar)';if(t.type==='tarea')t.type='seguimiento';if(t.status==='no_iniciado')t.status='esperando';if(!t.nextReview)t.nextReview=addD(3);if(!t.nextAction)t.nextAction='Hacer seguimiento si no responde';logH(t,`Asignada a ${t.responsible}`);save();toast('Asignada a '+normPerson(t.responsible))}
@@ -1346,7 +1370,7 @@ function createPerson(){const name=prompt('Nombre de la nueva persona:');if(!nam
 function deletePerson(name){if(normPerson(name)==='Yo'){toast('No puedes eliminarte');return}const n=TASKS.filter(t=>normPerson(t.responsible)===name).length;if(!confirm(`¿Eliminar a "${name}"?`+(n?`\nSus ${n} tarea(s) pasarán a ti (Yo).`:'')))return;TASKS.forEach(t=>{if(normPerson(t.responsible)===name){t.responsible='Yo';logH(t,'Responsable eliminado → Yo')}});PEOPLE=PEOPLE.filter(x=>x!==name);if(state.person===name){state.person=null;state.view='hoy'}save();render();toast('Persona eliminada')}
 function assignTaskProject(id,pid){const t=TASKS.find(x=>x.id===id);if(!t||t.project===pid)return;t.project=pid;logH(t,'Movida a '+projName(pid));save();render();toast('→ '+projName(pid))}
 function assignTaskPerson(id,name){const t=TASKS.find(x=>x.id===id);if(!t)return;const nm=normPerson(name);if(normPerson(t.responsible)===nm)return;t.responsible=nm;if(nm!=='Yo'&&t.status==='no_iniciado')t.status='esperando';logH(t,'Responsable: '+nm);save();render();toast('Asignada a '+nm)}
-function completeTaskById(id){const t=TASKS.find(x=>x.id===id);if(!t||isDone(t))return;t.status='completado';t.completedAt=todayStr();logH(t,'Realizada');save();render();confetti(window.innerWidth/2,window.innerHeight/3);toast('Realizada ✓')}
+function completeTaskById(id){const t=TASKS.find(x=>x.id===id);if(!t||isDone(t))return;t.status='completado';t.completedAt=todayStr();logH(t,'Realizada');spawnRecurrence(t);save();render();confetti(window.innerWidth/2,window.innerHeight/3);toast('Realizada ✓')}
 function inlineAddPerson(el){
   const inp=document.createElement('input');inp.className='b-add-input';inp.placeholder='Tarea para '+(state.person==='Yo'?'ti':state.person)+'… (Enter, comas para varias)';
   el.replaceWith(inp);inp.focus();let done=false;
@@ -1474,8 +1498,9 @@ function confetti(x,y){
 }
 
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('backdrop').classList.remove('show')}
-function initTheme(){const s=localStorage.getItem('dailymau_theme');if(s)document.documentElement.dataset.theme=s;else if(window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches)document.documentElement.dataset.theme='dark'}
-function toggleTheme(){const c=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=c;localStorage.setItem('dailymau_theme',c)}
+function applyAutoTheme(){const pref=localStorage.getItem('dailymau_theme')||'auto';if(pref==='auto'){const dark=window.matchMedia&&matchMedia('(prefers-color-scheme:dark)').matches;document.documentElement.dataset.theme=dark?'dark':'light'}else{document.documentElement.dataset.theme=pref}}
+function initTheme(){applyAutoTheme();if(window.matchMedia){try{matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if((localStorage.getItem('dailymau_theme')||'auto')==='auto')applyAutoTheme()})}catch(e){}}}
+function toggleTheme(){const cur=localStorage.getItem('dailymau_theme')||'auto';const next=cur==='auto'?'light':cur==='light'?'dark':'auto';localStorage.setItem('dailymau_theme',next);applyAutoTheme();toast(next==='auto'?'Tema: automático':next==='light'?'Tema: claro':'Tema: oscuro')}
 
 /* ---- EVENTOS ---- */
 document.getElementById('themeBtn').onclick=toggleTheme;
@@ -1499,7 +1524,18 @@ const _msgSave=document.getElementById('msgSave');if(_msgSave)_msgSave.onclick=s
 const _msgRegen=document.getElementById('msgRegen');if(_msgRegen)_msgRegen.onclick=regenDraft;
 document.getElementById('msgWa').onclick=()=>{window.open('https://wa.me/?text='+encodeURIComponent(document.getElementById('msgText').value),'_blank')};
 let _searchT;document.getElementById('search').oninput=(e)=>{state.search=e.target.value.trim();clearTimeout(_searchT);_searchT=setTimeout(render,120)};
-document.getElementById('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dailymau_'+todayStr()+'.json';a.click();toast('Respaldo exportado')};
+document.getElementById('exportBtn').onclick=()=>{exportDayText()};
+function exportDayText(){
+  const today=TASKS.filter(t=>isOpen(t)&&isMine(t)&&t.due&&daysFrom(t.due)<=0).sort(byDate);
+  const byproj={};today.forEach(t=>{(byproj[t.project]=byproj[t.project]||[]).push(t)});
+  let txt='MIS TAREAS — '+new Date().toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'\n\n';
+  if(!today.length)txt+='Sin tareas para hoy.\n';
+  else Object.keys(byproj).forEach(pid=>{txt+=projName(pid).toUpperCase()+'\n';byproj[pid].forEach(t=>{txt+='  [ ] '+t.title;if(t.nextAction)txt+=' — '+t.nextAction;txt+='\n'});txt+='\n'});
+  txt+='\n— Generado con DailyMau';
+  navigator.clipboard.writeText(txt).then(()=>toast('Día copiado al portapapeles ✓')).catch(()=>{
+    const blob=new Blob([txt],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mi-dia-'+todayStr()+'.txt';a.click();toast('Día exportado')});
+}
+function exportBackup(){const blob=new Blob([JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE,drafts:DRAFTS},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dailymau_'+todayStr()+'.json';a.click();toast('Respaldo exportado')}
 document.addEventListener('keydown',(e)=>{if(e.target.matches('input,textarea,select'))return;if(e.key==='n'||e.key==='N'){e.preventDefault();openModal()}if(e.key==='Escape'){closeModal();if(state.sel){state.sel=null;render()}}if(e.key==='/'){e.preventDefault();document.getElementById('search').focus()}});
 
 /* ---- INIT ---- */
