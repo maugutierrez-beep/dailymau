@@ -622,16 +622,16 @@ async function cloudLoad(){
   return applyCloudData(p)?true:null;
 }
 async function cloudSave(retry){if(!cloudReady)return;if(cloudBusy){clearTimeout(saveT);saveT=setTimeout(cloudSave,300);return}cloudBusy=true;setCloud('saving');
-  const payload=JSON.stringify({data:serialize(),updated_at:new Date().toISOString()});
-  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'return=minimal'},body:payload});
+  const payload=JSON.stringify({id:CLOUD.row,data:serialize(),updated_at:new Date().toISOString()});
+  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}`,{method:'POST',headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:payload});
     cloudBusy=false;
     if(r.ok){setCloud('saved')}
     else{if(!retry){cloudBusy=false;return cloudSave(true)}setCloud('error')}
   }catch(e){cloudBusy=false;if(!retry){await new Promise(r=>setTimeout(r,800));return cloudSave(true)}setCloud('error')}}
 function flushSave(){if(!cloudReady)return;clearTimeout(saveT);
-  try{fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${CLOUD.row}`,{method:'PATCH',
-    headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'return=minimal'},
-    body:JSON.stringify({data:serialize(),updated_at:new Date().toISOString()}),keepalive:true}).catch(()=>{})}catch(e){}}
+  try{fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}`,{method:'POST',
+    headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify({id:CLOUD.row,data:serialize(),updated_at:new Date().toISOString()}),keepalive:true}).catch(()=>{})}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSave()});
 window.addEventListener('pagehide',flushSave);
 window.addEventListener('beforeunload',flushSave);
