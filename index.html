@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>DailyMau · Tareas del día</title><!-- v1781017806 -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20120%20120%22%3E%3Crect%20width%3D%22120%22%20height%3D%22120%22%20rx%3D%2228%22%20fill%3D%22%2316243B%22/%3E%3Cpath%20d%3D%22M38%2060%20L52%2074%22%20fill%3D%22none%22%20stroke%3D%22%23E8794B%22%20stroke-width%3D%2210%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3Cpath%20d%3D%22M52%2074%20L82%2042%22%20fill%3D%22none%22%20stroke%3D%22%23FFFFFF%22%20stroke-width%3D%2210%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E">
+<title>jazzdoit · Tus tareas, con swing</title><!-- v1781017806 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Schibsted+Grotesk:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
   --font-body:'Schibsted Grotesk',-apple-system,BlinkMacSystemFont,sans-serif;
@@ -51,8 +52,8 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .login-screen.hidden{display:none}
 .login-card{background:var(--bg-2);border:1px solid var(--line);border-radius:20px;padding:40px 36px;width:min(380px,90vw);box-shadow:var(--shadow-lg);text-align:center}
 .login-logo{margin:0 auto 14px;display:block;border-radius:14px;box-shadow:var(--shadow)}
-.login-title{font-family:var(--font-display);font-size:26px;font-weight:600;margin-bottom:4px}
-.login-title span{color:var(--gold)}
+.login-title{font-family:'Poppins',sans-serif;font-size:28px;font-weight:800;letter-spacing:-.04em;text-transform:lowercase;margin-bottom:4px}
+.login-title span{color:#E8794B}
 .login-sub{color:var(--ink-3);font-size:13.5px;margin-bottom:22px}
 .login-error{color:var(--red);font-size:12.5px;font-weight:500;margin-bottom:8px;min-height:18px}
 .login-screen input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg-3);outline:none;margin-bottom:10px;font-size:14px;color:var(--ink)}
@@ -71,8 +72,8 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .sidebar{background:var(--bg-2);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
 .brand{padding:18px 20px 14px;display:flex;align-items:center;gap:11px}
 .brand svg{flex-shrink:0;border-radius:11px;box-shadow:var(--shadow)}
-.brand-name{font-family:var(--font-display);font-size:19px;font-weight:600;letter-spacing:-.015em}
-.brand-name span{color:var(--gold)}
+.brand-name{font-family:'Poppins',sans-serif;font-size:20px;font-weight:800;letter-spacing:-.04em;text-transform:lowercase;color:var(--ink)}
+.brand-name span{color:#E8794B}
 .brand-sub{font-size:11px;color:var(--ink-3);margin-top:-2px}
 
 .quick-add{margin:8px 14px 14px}
@@ -449,9 +450,9 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 <body>
 <div id="loginScreen" class="login-screen">
   <div class="login-card">
-    <svg class="login-logo" width="48" height="48" viewBox="0 0 44 44"><defs><linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2d4d77"/><stop offset="1" stop-color="#1f3a5f"/></linearGradient></defs><rect x="2" y="2" width="40" height="40" rx="11" fill="url(#lg2)"/><path d="M14 22l5 5 11-13" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><line x1="13" y1="32" x2="31" y2="32" stroke="#d4ab63" stroke-width="2.6" stroke-linecap="round"/></svg>
-    <h1 class="login-title">Daily<span>Mau</span></h1>
-    <p class="login-sub">Inicia sesión para continuar</p>
+    <svg class="login-logo" width="56" height="56" viewBox="0 0 120 120"><rect width="120" height="120" rx="28" fill="#16243B"/><path d="M38 60 L52 74" fill="none" stroke="#E8794B" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M52 74 L82 42" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h1 class="login-title">jazz<span>doit</span></h1>
+    <p class="login-sub">Tus tareas, con swing</p>
     <div id="loginError" class="login-error"></div>
     <input id="loginEmail" type="email" placeholder="Correo electrónico" autocomplete="email">
     <input id="loginPass" type="password" placeholder="Contraseña" autocomplete="current-password">
@@ -464,8 +465,8 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 <div class="app hidden" id="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <svg width="34" height="34" viewBox="0 0 44 44"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2d4d77"/><stop offset="1" stop-color="#1f3a5f"/></linearGradient></defs><rect x="2" y="2" width="40" height="40" rx="11" fill="url(#lg)"/><path d="M14 22l5 5 11-13" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><line x1="13" y1="32" x2="31" y2="32" stroke="#d4ab63" stroke-width="2.6" stroke-linecap="round"/></svg>
-      <div><div class="brand-name">Daily<span>Mau</span></div><div class="brand-sub">Tareas del día</div></div>
+      <svg width="34" height="34" viewBox="0 0 120 120"><rect width="120" height="120" rx="28" fill="#16243B"/><path d="M38 60 L52 74" fill="none" stroke="#E8794B" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M52 74 L82 42" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div><div class="brand-name">jazz<span>doit</span></div><div class="brand-sub">Tus tareas, con swing</div></div>
     </div>
     <div class="quick-add"><button id="addBtn" class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Agregar tarea</button></div>
     <nav class="nav" id="nav"></nav>
@@ -525,7 +526,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 
 <script>
 /* ============================================================
-   DailyMau — Tareas del día · ejecutar y supervisar
+   jazzdoit — Tus tareas, con swing · ejecutar y supervisar
    Single-file · localStorage · sin dependencias · sin niveles de prioridad
    ============================================================ */
 let PROJECTS=[
@@ -695,7 +696,7 @@ function showWelcome(){
   const ov=document.createElement('div');ov.id='welcomeOv';ov.className='overlay show';ov.style.zIndex='300';
   const cards=Object.keys(TEMPLATES).map(k=>{const t=TEMPLATES[k];return `<button class="wel-card" data-tpl="${k}"><div class="wel-card-name">${t.name}</div><div class="wel-card-desc">${t.desc}</div></button>`}).join('');
   ov.innerHTML=`<div class="modal" style="max-width:520px">
-    <div class="modal-h"><div><div style="font-family:var(--font-display);font-size:22px;font-weight:600">¡Bienvenido a DailyMau! 🎉</div><div style="font-size:13px;color:var(--ink-3);margin-top:4px">Elige un punto de partida. Podrás cambiar todo después.</div></div></div>
+    <div class="modal-h"><div><div style="font-family:var(--font-display);font-size:22px;font-weight:600">¡Bienvenido a jazzdoit! 🎉</div><div style="font-size:13px;color:var(--ink-3);margin-top:4px">Elige un punto de partida. Podrás cambiar todo después.</div></div></div>
     <div class="modal-b"><div class="wel-grid">${cards}</div>
       <button class="wel-skip" id="welSkip">Empezar desde cero</button>
     </div></div>`;
