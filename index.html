@@ -435,6 +435,15 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .day-copy{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
 .day-copy:hover{background:var(--accent-hover,#c26530);transform:translateY(-1px)}
 .day-copy svg{width:14px;height:14px}
+
+.wel-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.wel-card{text-align:left;background:var(--bg-2);border:1.5px solid var(--line);border-radius:14px;padding:16px;cursor:pointer;transition:all .15s}
+.wel-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow)}
+.wel-card-name{font-weight:700;font-size:15px;color:var(--ink)}
+.wel-card-desc{font-size:12px;color:var(--ink-3);margin-top:4px;line-height:1.4}
+.wel-skip{width:100%;background:none;border:none;color:var(--ink-3);font-size:13px;padding:8px;cursor:pointer;text-decoration:underline}
+.wel-skip:hover{color:var(--ink)}
+@media(max-width:480px){.wel-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -668,8 +677,9 @@ async function cloudInit(){
     if(legacy && applyCloudData(legacy)){rollover();render();await cloudSave();setCloud('saved');return}
   }
   if(TASKS.length){await cloudSave();setCloud('saved');return}
-  // Usuario nuevo de verdad → onboarding
+  // Usuario nuevo de verdad → selector de plantilla + onboarding
   seedOnboarding();rollover();render();await cloudSave();setCloud('saved');
+  setTimeout(showWelcome,400);
 }
 
 function defaultProjects(){return [
@@ -678,6 +688,53 @@ function defaultProjects(){return [
   {id:'personal',name:'Personal',color:'#3f9d52'},
   {id:'rapidos',name:'Pendientes rápidos',color:'#d4923e'}
 ]}
+
+
+function showWelcome(){
+  if(document.getElementById('welcomeOv'))return;
+  const ov=document.createElement('div');ov.id='welcomeOv';ov.className='overlay show';ov.style.zIndex='300';
+  const cards=Object.keys(TEMPLATES).map(k=>{const t=TEMPLATES[k];return `<button class="wel-card" data-tpl="${k}"><div class="wel-card-name">${t.name}</div><div class="wel-card-desc">${t.desc}</div></button>`}).join('');
+  ov.innerHTML=`<div class="modal" style="max-width:520px">
+    <div class="modal-h"><div><div style="font-family:var(--font-display);font-size:22px;font-weight:600">¡Bienvenido a DailyMau! 🎉</div><div style="font-size:13px;color:var(--ink-3);margin-top:4px">Elige un punto de partida. Podrás cambiar todo después.</div></div></div>
+    <div class="modal-b"><div class="wel-grid">${cards}</div>
+      <button class="wel-skip" id="welSkip">Empezar desde cero</button>
+    </div></div>`;
+  document.body.appendChild(ov);
+  ov.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{applyTemplate(b.dataset.tpl);ov.remove();state.view='dia';render();cloudSave();confetti(window.innerWidth/2,window.innerHeight/3);toast('¡Listo! Tu espacio está armado')});
+  document.getElementById('welSkip').onclick=()=>{ov.remove()};
+}
+
+const TEMPLATES={
+  basico:{name:'Básico',desc:'Trabajo, Personal y pendientes rápidos',projects:[
+    {id:'trabajo',name:'Trabajo',color:'#1f3a5f'},{id:'personal',name:'Personal',color:'#3f9d52'},{id:'rapidos',name:'Pendientes rápidos',color:'#d4923e'}
+  ],tasks:[]},
+  emprendedor:{name:'Emprendedor',desc:'Negocio, Finanzas, Clientes y Personal',projects:[
+    {id:'negocio',name:'Negocio',color:'#1f3a5f'},{id:'finanzas',name:'Finanzas',color:'#b08a3e'},{id:'clientes',name:'Clientes',color:'#3f9d9d'},{id:'personal',name:'Personal',color:'#3f9d52'}
+  ],tasks:[
+    {title:'Revisar metas del mes',project:'negocio',remind:'same'},
+    {title:'Conciliar cuentas',project:'finanzas'},
+    {title:'Seguimiento a clientes pendientes',project:'clientes'}
+  ]},
+  hogar:{name:'Casa y familia',desc:'Hogar, Compras, Familia y Personal',projects:[
+    {id:'hogar',name:'Hogar',color:'#8a5a3a'},{id:'compras',name:'Compras',color:'#d4923e'},{id:'familia',name:'Familia',color:'#c2607a'},{id:'personal',name:'Personal',color:'#3f9d52'}
+  ],tasks:[
+    {title:'Mercado de la semana',project:'compras',repeat:'weekly'},
+    {title:'Pagar servicios',project:'hogar',repeat:'monthly',remind:'before2'}
+  ]},
+  estudiante:{name:'Estudiante',desc:'Estudio, Entregas, Personal',projects:[
+    {id:'estudio',name:'Estudio',color:'#1f3a5f'},{id:'entregas',name:'Entregas',color:'#a8423a'},{id:'personal',name:'Personal',color:'#3f9d52'}
+  ],tasks:[
+    {title:'Repasar apuntes',project:'estudio',repeat:'weekly'}
+  ]}
+};
+function applyTemplate(key){
+  const tpl=TEMPLATES[key]||TEMPLATES.basico;const today=todayStr();
+  PROJECTS=[{id:'general',name:'General',color:'#6b7280'},...tpl.projects];
+  PEOPLE=[];DRAFTS={};
+  TASKS=(tpl.tasks||[]).map(t=>({id:uid(),title:t.title,description:'',project:t.project||'general',type:'tarea',flag:false,status:'no_iniciado',createdAt:today,due:today,responsible:'Yo',nextAction:'',repeat:t.repeat||'',remind:t.remind||'',notes:[],links:'',history:[{d:today,t:'Creada'}]}));
+  saveLocal();
+}
+
 function seedOnboarding(){
   const today=todayStr();const tmr=addD(1);
   PROJECTS=defaultProjects();PEOPLE=[];DRAFTS={};
@@ -1019,7 +1076,7 @@ function renderDay(){
 function dayRow(t){const sup=!isMine(t);const star=t.flag;
   return `<div class="task drow ${star?'pinned':''}" data-id="${t.id}" draggable="true">
     <button class="check" data-check="${t.id}">${svg(I.check,11)}</button>
-    <div class="drow-main"><span class="t-title">${escapeH(t.title)}</span>${t.repeat?`<span class="mini-badge" title="Se repite">↻</span>`:''}${(t.subtasks&&t.subtasks.length)?`<span class="mini-badge" title="Subtareas">☑ ${t.subtasks.filter(s=>s.done).length}/${t.subtasks.length}</span>`:''}${t.nextAction?`<span class="drow-na">${svg(I.arrow,10)} ${escapeH(t.nextAction)}</span>`:''}${sup&&staleDays(t)>=3?`<span class="wait-badge" title="Esperando respuesta">${staleDays(t)}d</span>`:''}</div>
+    <div class="drow-main"><span class="t-title">${escapeH(t.title)}</span>${t.repeat?`<span class="mini-badge" title="Se repite">↻</span>`:''}${t.remind?`<span class="mini-badge" title="Recordatorio por correo">⏰</span>`:''}${(t.subtasks&&t.subtasks.length)?`<span class="mini-badge" title="Subtareas">☑ ${t.subtasks.filter(s=>s.done).length}/${t.subtasks.length}</span>`:''}${t.nextAction?`<span class="drow-na">${svg(I.arrow,10)} ${escapeH(t.nextAction)}</span>`:''}${sup&&staleDays(t)>=3?`<span class="wait-badge" title="Esperando respuesta">${staleDays(t)}d</span>`:''}</div>
     <div class="drow-side">
       ${sup?`<span class="drow-resp"><span class="av" style="background:${colorFor(respList(t)[0]||'')}">${initials(respList(t)[0]||'?')}</span>${escapeH(respFull(t))}</span>`:''}
       <span class="row-actions"><button class="ra ra-star ${star?'starred':''}" data-act="star" data-id="${t.id}" title="${star?'Quitar prioridad':'Marcar prioridad'}">${svg(I.star,17)}</button><button class="ra ra-snz" data-act="snooze" data-id="${t.id}" title="Mañana">${svg(I.snooze,18)}</button><button class="ra ra-smd" data-act="someday" data-id="${t.id}" title="Algún día">${svg(I.fwd,18)}</button></span>
@@ -1295,6 +1352,7 @@ function renderDetail(){
         <div class="field"><label>Estado</label><select data-f="status">${opt(STATUSES,t.status)}</select></div>
         <div class="field"><label>Para el día</label><input type="date" data-f="due" value="${t.due}"></div>
         <div class="field"><label>Repetir</label><select data-f="repeat"><option value="" ${!t.repeat?'selected':''}>No repetir</option><option value="daily" ${t.repeat==='daily'?'selected':''}>Cada día</option><option value="weekly" ${t.repeat==='weekly'?'selected':''}>Cada semana</option><option value="biweekly" ${t.repeat==='biweekly'?'selected':''}>Cada 2 semanas</option><option value="monthly" ${t.repeat==='monthly'?'selected':''}>Cada mes</option></select></div>
+        <div class="field"><label>Recordar por correo</label><select data-f="remind"><option value="" ${!t.remind?'selected':''}>Sin recordatorio</option><option value="same" ${t.remind==='same'?'selected':''}>El día de la tarea</option><option value="before1" ${t.remind==='before1'?'selected':''}>1 día antes</option><option value="before2" ${t.remind==='before2'?'selected':''}>2 días antes</option></select></div>
         <div class="field"><label>Próx. seguimiento</label><input type="date" data-f="nextReview" value="${t.nextReview}"></div>
         <div class="field"><label>Persona relacionada</label><input data-f="relatedPerson" value="${escapeAttr(t.relatedPerson)}"></div>
         <div class="field"><label>Canal</label><select data-f="channel">${opt(CHANNELS,t.channel)}</select></div>
@@ -1360,8 +1418,8 @@ function bindDetail(t){
     else if(a==='delete'){const tk=TASKS.find(x=>x.id===t.id);if(tk){tk.deleted=Date.now();state.sel=null;save();render();toast('Tarea eliminada',()=>{delete tk.deleted;save();render();toast('Restaurada ✓')})}}
     else if(a==='dup'){const c=JSON.parse(JSON.stringify(t));c.id=uid();c.title+=' (copia)';c.history=[{d:todayStr(),t:'Duplicada'}];c.completedAt='';c.status='no_iniciado';c.carried=0;TASKS.unshift(c);state.sel=c.id;save();render();toast('Duplicada')}});
 }
-function labelF(f){return {project:'Proyecto',type:'Tipo',status:'Estado',due:'Día',nextReview:'Próx. seguimiento',responsible:'Responsable',relatedPerson:'Persona',channel:'Canal',links:'Enlace',repeat:'Repetir'}[f]||f}
-function valLabel(f,v){if(f==='project')return projName(v);if(f==='type')return typeOf(v).name;if(f==='status')return statusName(v);if(f==='repeat')return({daily:'Cada día',weekly:'Cada semana',biweekly:'Cada 2 semanas',monthly:'Cada mes'}[v]||'No repetir');return v||'—'}
+function labelF(f){return {project:'Proyecto',type:'Tipo',status:'Estado',due:'Día',nextReview:'Próx. seguimiento',responsible:'Responsable',relatedPerson:'Persona',channel:'Canal',links:'Enlace',repeat:'Repetir',remind:'Recordatorio'}[f]||f}
+function valLabel(f,v){if(f==='project')return projName(v);if(f==='type')return typeOf(v).name;if(f==='status')return statusName(v);if(f==='repeat')return({daily:'Cada día',weekly:'Cada semana',biweekly:'Cada 2 semanas',monthly:'Cada mes'}[v]||'No repetir');if(f==='remind')return({same:'El día',before1:'1 día antes',before2:'2 días antes'}[v]||'Sin recordatorio');return v||'—'}
 function logH(t,txt){t.history=t.history||[];t.history.push({d:todayStr(),t:txt})}
 
 /* ---- ACCIONES ---- */
