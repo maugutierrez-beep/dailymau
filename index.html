@@ -477,12 +477,11 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 
 .prof-install{margin-top:16px;padding:13px 14px;background:var(--bg-3);border-radius:12px;display:flex;align-items:center;gap:12px;justify-content:space-between}
 
-.gvc-credit{padding:14px 14px 16px;text-align:center;border-top:1px solid var(--line)}
-.gvc-credit-login{border-top:none;margin-top:22px;padding-bottom:0}
-.gvc-credit-login .gvc-logo{height:22px}
-.gvc-credit-label{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);opacity:.7;margin-bottom:6px}
-.gvc-logo{height:20px;width:auto;opacity:.85;display:none}
-.gvc-credit-tag{font-size:10px;color:var(--ink-3);opacity:.65;margin-top:7px;font-style:italic;letter-spacing:.02em}
+.gvc-credit{padding:12px 14px;text-align:center;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
+.gvc-credit-login{border-top:none;margin-top:20px;padding-bottom:0}
+.gvc-credit-login .gvc-logo{height:15px}
+.gvc-logo{height:14px;width:auto;opacity:.8;display:none;vertical-align:middle}
+.gvc-credit-tag{font-size:10.5px;color:var(--ink-3);opacity:.7;letter-spacing:.01em;white-space:nowrap}
 /* Mostrar el logo según el tema */
 :root[data-theme="light"] .gvc-logo-light,
 :root:not([data-theme="dark"]) .gvc-logo-light{display:inline-block}
@@ -505,10 +504,9 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
     <div class="login-div"><span>o</span></div>
     <button id="googleBtn" class="login-google"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg> Continuar con Google</button>
     <div class="gvc-credit gvc-credit-login">
-      <div class="gvc-credit-label">Una creación de</div>
-      <img class="gvc-logo gvc-logo-light" src="gvc-navy.png" alt="GVC Capital Labs">
-      <img class="gvc-logo gvc-logo-dark" src="gvc-white.png" alt="GVC Capital Labs">
-      <div class="gvc-credit-tag">Labs · From Colombia to the World</div>
+      <img class="gvc-logo gvc-logo-light" src="gvc-navy.png" alt="GVC Capital">
+      <img class="gvc-logo gvc-logo-dark" src="gvc-white.png" alt="GVC Capital">
+      <span class="gvc-credit-tag">· From 🇨🇴 to the 🌍</span>
     </div>
   </div>
 </div>
@@ -528,10 +526,9 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
       <button class="icon-btn" id="exportBtn" title="Descargar respaldo (JSON)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
     </div>
     <div class="gvc-credit">
-      <div class="gvc-credit-label">Una creación de</div>
-      <img class="gvc-logo gvc-logo-light" src="gvc-navy.png" alt="GVC Capital Labs">
-      <img class="gvc-logo gvc-logo-dark" src="gvc-white.png" alt="GVC Capital Labs">
-      <div class="gvc-credit-tag">Labs · From Colombia to the World</div>
+      <img class="gvc-logo gvc-logo-light" src="gvc-navy.png" alt="GVC Capital">
+      <img class="gvc-logo gvc-logo-dark" src="gvc-white.png" alt="GVC Capital">
+      <span class="gvc-credit-tag">· From 🇨🇴 to the 🌍</span>
     </div>
   </aside>
   <div class="backdrop" id="backdrop"></div>
