@@ -11,7 +11,7 @@ jobs:
       - name: Enviar resumen diario
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SECRET }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
@@ -21,7 +21,7 @@ jobs:
           from email.mime.multipart import MIMEMultipart
           from datetime import datetime, timedelta
           SB=os.environ['SUPABASE_URL'];SK=os.environ['SUPABASE_KEY']
-          req=urllib.request.Request(SB+'/rest/v1/dailymau_db?id=eq.main&select=data',headers={'apikey':SK,'Authorization':'Bearer '+SK})
+          req=urllib.request.Request(SB+'/rest/v1/dailymau_db?id=eq.u_88db9c76-6ffe-4449-938c-0d57628eb566&select=data',headers={'apikey':SK,'Authorization':'Bearer '+SK})
           raw=json.loads(urllib.request.urlopen(req).read())[0]['data']
           data=json.loads(raw) if isinstance(raw,str) else raw
           tasks=data.get('tasks',[]) if isinstance(data,dict) else data
