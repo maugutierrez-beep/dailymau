@@ -445,6 +445,16 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .wel-skip{width:100%;background:none;border:none;color:var(--ink-3);font-size:13px;padding:8px;cursor:pointer;text-decoration:underline}
 .wel-skip:hover{color:var(--ink)}
 @media(max-width:480px){.wel-grid{grid-template-columns:1fr}}
+
+.profile-btn{background:none;border:none;cursor:pointer;padding:0;flex-shrink:0}
+.profile-btn .av-sm{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;background:var(--accent);background-size:cover;background-position:center}
+.profile-btn:hover{opacity:.85}
+.prof-modal{max-width:400px}
+.prof-photo-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:20px}
+.prof-photo{width:88px;height:88px;border-radius:50%;background:var(--accent);background-size:cover;background-position:center;display:grid;place-items:center;font-size:30px;font-weight:700;color:#fff;cursor:pointer;position:relative;overflow:hidden}
+.prof-photo:hover::after{content:'Cambiar';position:absolute;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;font-size:12px}
+.prof-photo-btns{display:flex;gap:8px}
+.prof-photo-btns button{font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg-2);color:var(--ink);cursor:pointer}
 </style>
 </head>
 <body>
@@ -471,6 +481,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
     <div class="quick-add"><button id="addBtn" class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Agregar tarea</button></div>
     <nav class="nav" id="nav"></nav>
     <div class="sidebar-foot">
+      <button class="profile-btn" id="profileBtn" title="Mi perfil"><span class="av-sm" id="profileAv"></span></button>
       <div class="cloud-pill" id="cloud"><span class="cloud-dot"></span>Solo local</div>
       <button class="icon-btn" id="themeBtn" title="Tema claro/oscuro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
       <button class="icon-btn" id="logoutBtn" title="Cerrar sesión"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
@@ -578,7 +589,7 @@ const I={
 };
 const svg=(p,w=16)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="${w}" height="${w}">${p}</svg>`;
 
-let TASKS=[],PEOPLE=[],DRAFTS={},state={view:'dia',sel:null,filter:{},search:'',proj:null,person:null,revMode:'am',showDone:false};
+let TASKS=[],PEOPLE=[],DRAFTS={},PROFILE={name:'',photo:''},state={view:'dia',sel:null,filter:{},search:'',proj:null,person:null,revMode:'am',showDone:false};
 let KEY='dailymau_tasks_v1';
 function localISO(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 const todayStr=()=>localISO(new Date());
@@ -603,6 +614,43 @@ async function signUp(email,pass){
 function signInGoogle(){window.location.href=CLOUD.url+'/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(window.location.origin+window.location.pathname)}
 function checkOAuthCallback(){const h=window.location.hash;if(h&&h.includes('access_token')){const p=new URLSearchParams(h.substring(1));const at=p.get('access_token');const rt=p.get('refresh_token');if(at){saveSession({access_token:at,refresh_token:rt});window.history.replaceState(null,'',window.location.pathname);return true}}return false}
 async function refreshToken(){if(!SESSION||!SESSION.refresh_token)return false;try{const r=await fetch(CLOUD.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:CLOUD.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:SESSION.refresh_token})});if(!r.ok)return false;saveSession(await r.json());return true}catch(e){return false}}
+
+function openProfile(){
+  const ov=document.getElementById('overlay');
+  const photo=myPhoto();
+  const html=`<div class="modal prof-modal">
+    <div class="modal-h"><div><div style="font-family:var(--font-display);font-size:20px;font-weight:600">Mi perfil</div><div style="font-size:12.5px;color:var(--ink-3);margin-top:2px">${escapeH(getUserEmail())}</div></div></div>
+    <div class="modal-b">
+      <div class="prof-photo-wrap">
+        <div class="prof-photo" id="profPhoto" style="${photo?`background-image:url('${photo}')`:''}">${photo?'':myInitials()}</div>
+        <div class="prof-photo-btns">
+          <button id="profPhotoUp">Subir foto</button>
+          ${photo?'<button id="profPhotoDel">Quitar</button>':''}
+        </div>
+        <input type="file" id="profFile" accept="image/*" style="display:none">
+      </div>
+      <div class="field"><label>Tu nombre</label><input id="profName" value="${escapeAttr(PROFILE.name||'')}" placeholder="Ej: ${escapeAttr(getUserEmail().split('@')[0])}" maxlength="40"></div>
+      <div style="font-size:12px;color:var(--ink-3);margin-top:6px">Así te verán en tus tareas y mensajes.</div>
+    </div>
+    <div class="modal-f"><div></div><div style="display:flex;gap:8px"><button class="btn-ghost" id="profCancel">Cancelar</button><button class="btn-primary" id="profSave">Guardar</button></div></div>
+  </div>`;
+  ov.innerHTML=html;ov.classList.add('show');
+  let newPhoto=photo;
+  const pp=document.getElementById('profPhoto');
+  const fileInp=document.getElementById('profFile');
+  document.getElementById('profPhotoUp').onclick=()=>fileInp.click();
+  pp.onclick=()=>fileInp.click();
+  fileInp.onchange=(e)=>{const f=e.target.files[0];if(!f)return;if(f.size>500000){toast('La foto debe pesar menos de 500KB');return}const rd=new FileReader();rd.onload=()=>{newPhoto=rd.result;pp.style.backgroundImage=`url('${newPhoto}')`;pp.textContent=''};rd.readAsDataURL(f)};
+  const delBtn=document.getElementById('profPhotoDel');if(delBtn)delBtn.onclick=()=>{newPhoto='';pp.style.backgroundImage='';pp.textContent=myInitials()};
+  document.getElementById('profCancel').onclick=()=>ov.classList.remove('show');
+  document.getElementById('profSave').onclick=()=>{
+    PROFILE.name=document.getElementById('profName').value.trim();
+    PROFILE.photo=newPhoto;
+    save();ov.classList.remove('show');render();updateProfileAvatar();toast('Perfil actualizado ✓');
+  };
+}
+function updateProfileAvatar(){const el=document.getElementById('profileAv');if(!el)return;const photo=myPhoto();if(photo){el.style.backgroundImage=`url('${photo}')`;el.textContent=''}else{el.style.backgroundImage='';el.textContent=myInitials()}}
+
 async function signOut(){flushSave();if(SESSION&&SESSION.access_token){try{await fetch(CLOUD.url+'/auth/v1/logout',{method:'POST',headers:hGet()})}catch(e){}}clearSession();TASKS=[];PROJECTS=defaultProjects();PEOPLE=[];DRAFTS={};cloudReady=false;CLOUD.row='main';showLogin()}
 function showLogin(){document.getElementById('loginScreen').classList.remove('hidden');document.getElementById('app').classList.add('hidden')}
 function startApp(){setUserRow();document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');TASKS=[];PROJECTS=defaultProjects();PEOPLE=[];DRAFTS={};loadLocal();rollover();render();cloudInit();scheduleRefreshToken()}
@@ -615,11 +663,11 @@ async function handleSignup(){const e=document.getElementById('loginEmail').valu
 const CLOUD={url:'https://cwqenbkjvuqtaynxpomq.supabase.co',key:'sb_publishable_WGdKp8XsGWxV0hy-qNZ7-g_X_KMfGYR',table:'dailymau_db',row:'main'};
 function setUserRow(){const _id=getUserId();if(_id){CLOUD.row='u_'+_id;KEY='dailymau_u_'+_id}else{CLOUD.row='main';KEY='dailymau_tasks_v1'}}
 let cloudReady=false,saveT=null,backupT=null,cloudBusy=false;
-function serialize(){return JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE,drafts:DRAFTS,meta:buildMeta()})}
+function serialize(){return JSON.stringify({v:2,tasks:TASKS,projects:PROJECTS,people:PEOPLE,drafts:DRAFTS,profile:PROFILE,meta:buildMeta()})}
 function buildMeta(){const prev=window._userMeta||{};const now=new Date().toISOString();
   return {email:getUserEmail(),uid:getUserId(),createdAt:prev.createdAt||now,lastActive:now,
     taskCount:TASKS.length,doneCount:TASKS.filter(t=>t.status==='completado').length}}
-function applyParsed(p){if(Array.isArray(p)){TASKS=p;return p.length>0}if(p&&Array.isArray(p.tasks)){TASKS=p.tasks;if(Array.isArray(p.projects)&&p.projects.length)PROJECTS=p.projects;if(Array.isArray(p.people))PEOPLE=p.people;if(p.drafts&&typeof p.drafts==='object')DRAFTS=p.drafts;return p.tasks.length>0}return false}
+function applyParsed(p){if(Array.isArray(p)){TASKS=p;return p.length>0}if(p&&Array.isArray(p.tasks)){TASKS=p.tasks;if(Array.isArray(p.projects)&&p.projects.length)PROJECTS=p.projects;if(Array.isArray(p.people))PEOPLE=p.people;if(p.drafts&&typeof p.drafts==='object')DRAFTS=p.drafts;if(p.profile&&typeof p.profile==='object')PROFILE=p.profile;return p.tasks.length>0}return false}
 function loadLocal(){try{var r=localStorage.getItem(KEY);if(r){var d=JSON.parse(r);applyParsed(d);return true}}catch(e){}return false}
 function saveLocal(){try{localStorage.setItem(KEY,serialize())}catch(e){}}
 function save(){saveLocal();scheduleCloud()}
@@ -635,7 +683,7 @@ async function cloudFetchRow(row,_retried){
     if(!j||!j[0]||!j[0].data)return null;
     return typeof j[0].data==='string'?JSON.parse(j[0].data):j[0].data;
   }catch(e){return undefined}}
-function applyCloudData(p){if(p&&p.meta)window._userMeta=p.meta;
+function applyCloudData(p){if(p&&p.meta)window._userMeta=p.meta;if(p&&p.profile)PROFILE=p.profile;
   let ct=[],cp=[],cpe=[],dr={};
   if(Array.isArray(p))ct=p;
   else if(p&&Array.isArray(p.tasks)){ct=p.tasks;cp=p.projects||[];cpe=p.people||[];dr=p.drafts||{}}
@@ -692,13 +740,13 @@ function showWelcome(){
   const ov=document.createElement('div');ov.id='welcomeOv';ov.className='overlay show';ov.style.zIndex='300';
   const cards=Object.keys(TEMPLATES).map(k=>{const t=TEMPLATES[k];return `<button class="wel-card" data-tpl="${k}"><div class="wel-card-name">${t.name}</div><div class="wel-card-desc">${t.desc}</div></button>`}).join('');
   ov.innerHTML=`<div class="modal" style="max-width:520px">
-    <div class="modal-h"><div><div style="font-family:var(--font-display);font-size:22px;font-weight:600">¡Bienvenido a jazzdoit! 🎉</div><div style="font-size:13px;color:var(--ink-3);margin-top:4px">Elige un punto de partida. Podrás cambiar todo después.</div></div></div>
-    <div class="modal-b"><div class="wel-grid">${cards}</div>
+    <div class="modal-h"><div><div style="font-family:var(--font-display);font-size:22px;font-weight:600">¡Bienvenido a jazzdoit! 🎉</div><div style="font-size:13px;color:var(--ink-3);margin-top:4px">¿Cómo te llamas? Luego elige un punto de partida.</div></div></div>
+    <div class="modal-b"><div class="field" style="margin-bottom:16px"><label>Tu nombre</label><input id="welName" placeholder="Tu nombre" maxlength="40" style="width:100%"></div><div class="wel-grid">${cards}</div>
       <button class="wel-skip" id="welSkip">Empezar desde cero</button>
     </div></div>`;
   document.body.appendChild(ov);
-  ov.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{applyTemplate(b.dataset.tpl);ov.remove();state.view='dia';render();cloudSave();confetti(window.innerWidth/2,window.innerHeight/3);toast('¡Listo! Tu espacio está armado')});
-  document.getElementById('welSkip').onclick=()=>{ov.remove()};
+  ov.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{const nm=document.getElementById('welName');if(nm&&nm.value.trim())PROFILE.name=nm.value.trim();applyTemplate(b.dataset.tpl);ov.remove();state.view='dia';render();cloudSave();confetti(window.innerWidth/2,window.innerHeight/3);toast('¡Listo! Tu espacio está armado')});
+  document.getElementById('welSkip').onclick=()=>{const nm=document.getElementById('welName');if(nm&&nm.value.trim()){PROFILE.name=nm.value.trim();save();render()}ov.remove()};
 }
 
 const TEMPLATES={
@@ -764,16 +812,19 @@ const isOpen=(t)=>!t.deleted&&t.status!=='completado'&&t.status!=='cancelado';
 const isImportant=(t)=>isOpen(t)&&t.flag;
 const statusName=(id)=>(STATUSES.find(s=>s.id===id)||{}).name||id;
 function staleDays(t){const last=t.history?.[t.history.length-1]?.d||t.createdAt;return daysFrom(last)!==null?-daysFrom(last):0}
-function normPerson(n){if(!n)return '';const x=n.trim();if(!x)return '';if(/^(yo|mau|mauricio|mauricio gutiérrez|mauricio gutierrez)$/i.test(x))return 'Yo';return x}
+function myName(){return (PROFILE&&PROFILE.name&&PROFILE.name.trim())?PROFILE.name.trim():(getUserEmail()?getUserEmail().split('@')[0]:'Yo')}
+function myInitials(){const n=myName();if(!n||n==='Yo')return 'YO';const parts=n.split(/\s+/).filter(x=>x);if(parts.length>=2)return (parts[0][0]+parts[1][0]).toUpperCase();return n.slice(0,2).toUpperCase()}
+function myPhoto(){return PROFILE&&PROFILE.photo?PROFILE.photo:''}
+function normPerson(n){if(!n)return '';const x=n.trim();if(!x)return '';if(/^yo$/i.test(x))return 'Yo';return x}
 function respList(t){const r=t&&t.responsible?t.responsible:'';return r.split(',').map(s=>normPerson(s)).filter(x=>x)}
 function respHas(t,person){const np=normPerson(person);return respList(t).includes(np)}
 function respLabel(t){const l=respList(t);if(!l.length)return '(sin asignar)';if(l.length===1)return l[0];return l[0]+' +'+(l.length-1)}
 function respFull(t){const l=respList(t);return l.length?l.join(', '):'(sin asignar)'}
 const isMine=(t)=>respList(t).includes('Yo');
-function initials(n){const x=normPerson(n);if(!x)return '?';if(x==='Yo')return 'MG';return x.split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase()}
+function initials(n){const x=normPerson(n);if(!x)return '?';if(x==='Yo')return myInitials();return x.split(/\s+/).slice(0,2).map(s=>s[0]).join('').toUpperCase()}
 function colorFor(name){const x=normPerson(name);if(x==='Yo')return 'var(--accent)';let h=0;for(const c of x)h=(h*31+c.charCodeAt(0))%360;return `hsl(${h} 42% 45%)`}
 function allPeople(){const set=new Set(PEOPLE.map(normPerson).filter(x=>x&&x!=='Yo'));TASKS.forEach(t=>{respList(t).forEach(p=>{if(p&&p!=='Yo')set.add(p)})});return ['Yo',...[...set].sort((a,b)=>a.localeCompare(b))]}
-function peopleOptions(sel){let cur=normPerson(sel)||'Yo';const ppl=allPeople();let opts=ppl.map(n=>`<option value="${escapeAttr(n)}"${n===cur?' selected':''}>${n==='Yo'?'Yo (Mauricio)':escapeH(n)}</option>`).join('');if(cur&&!ppl.includes(cur))opts=`<option value="${escapeAttr(cur)}" selected>${escapeH(cur)}</option>`+opts;opts+=`<option value="__new__">➕ Nuevo responsable…</option>`;return opts}
+function peopleOptions(sel){let cur=normPerson(sel)||'Yo';const ppl=allPeople();let opts=ppl.map(n=>`<option value="${escapeAttr(n)}"${n===cur?' selected':''}>${n==='Yo'?'Yo ('+escapeH(myName())+')':escapeH(n)}</option>`).join('');if(cur&&!ppl.includes(cur))opts=`<option value="${escapeAttr(cur)}" selected>${escapeH(cur)}</option>`+opts;opts+=`<option value="__new__">➕ Nuevo responsable…</option>`;return opts}
 
 /* ---- SUGERENCIAS (heurística) ---- */
 function suggest(text){
@@ -853,7 +904,7 @@ function navItem(v,count){const a=state.view===v.id;return `<button class="nav-i
 
 /* ---- RENDER ---- */
 function go(v){state.view=v;state.proj=null;state.person=null;state.sel=null;state.filter={};closeSidebar();render()}
-function render(){
+function render(){try{updateProfileAvatar()}catch(e){}
   renderNav();updatePeopleList();
   const titles={dia:['Mi día',fmtDate()],hoy:['Tareas',fmtDate()],realizadas:['Realizadas','Historial de lo completado'],todas:['Todas las pendientes','Vista consolidada por proyecto'],personas:['Personas','Tareas propias y supervisadas'],mensajes:['Mensajes','Borradores guardados por persona'],seguimientos:['Seguimientos','Temas que dependen de otros'],inbox:['Inbox','Captura rápida sin clasificar'],calendario:['Calendario','Tareas por fecha'],revision:['Revisión diaria','Inicio y cierre del día'],admin:['Panel de administrador','Usuarios y métricas de uso'],proyectos:[state.proj?projName(state.proj):'Proyectos','']};
   let [title,sub]=titles[state.view]||['',''];
@@ -1037,7 +1088,7 @@ function renderPeople(){
     const arr=map[n],over=arr.filter(t=>t.carried>0).length,next=arr.map(t=>t.due).filter(Boolean).sort()[0];
     return `<div class="person-card ${n==='Yo'?'me':''}" data-person="${escapeAttr(n)}">
       <div class="av-lg" style="background:${colorFor(n)}">${initials(n)}</div>
-      <div style="flex:1"><h3>${n==='Yo'?'Yo (Mauricio)':escapeH(n)}</h3>
+      <div style="flex:1"><h3>${n==='Yo'?'Yo ('+escapeH(myName())+')':escapeH(n)}</h3>
       <div class="pm"><b>${arr.length}</b> pendiente(s)${over?` · <span style="color:var(--amber)">${over} arrastrada(s)</span>`:''}${next?` · próx ${dueLabel(next)}`:''}</div></div>
     </div>`}).join('')+`</div>`;
 }
@@ -1375,7 +1426,7 @@ function openRespPicker(t){
   const ppl=allPeople();
   const pop=document.createElement('div');pop.id='respPop';pop.className='resp-pop';
   pop.innerHTML=`<div class="resp-pop-h">Asignar responsables</div>
-    <div class="resp-pop-list">${ppl.map(n=>`<label class="resp-opt"><input type="checkbox" value="${escapeAttr(n)}" ${sel.includes(n)?'checked':''}><span class="av" style="background:${colorFor(n)}">${initials(n)}</span><span>${n==='Yo'?'Yo (Mauricio)':escapeH(n)}</span></label>`).join('')}</div>
+    <div class="resp-pop-list">${ppl.map(n=>`<label class="resp-opt"><input type="checkbox" value="${escapeAttr(n)}" ${sel.includes(n)?'checked':''}><span class="av" style="background:${colorFor(n)}">${initials(n)}</span><span>${n==='Yo'?'Yo ('+escapeH(myName())+')':escapeH(n)}</span></label>`).join('')}</div>
     <div class="resp-pop-f"><button type="button" id="respNew">➕ Nueva persona</button><button type="button" id="respDone" class="btn-primary">Listo</button></div>`;
   document.body.appendChild(pop);
   const btn=document.getElementById('respBtn');const r=btn.getBoundingClientRect();
@@ -1577,6 +1628,7 @@ document.getElementById('overlay').onclick=(e)=>{if(e.target.id==='overlay')clos
 document.getElementById('mTitle').onkeydown=(e)=>{if(e.key==='Enter'){e.preventDefault();saveModal()}};
 document.getElementById('addBtn').onclick=()=>openModal();
 document.getElementById('logoutBtn').onclick=signOut;
+const _pb=document.getElementById('profileBtn');if(_pb)_pb.onclick=openProfile;
 document.getElementById('loginBtn').onclick=handleLogin;
 document.getElementById('signupBtn').onclick=handleSignup;
 document.getElementById('googleBtn').onclick=signInGoogle;
