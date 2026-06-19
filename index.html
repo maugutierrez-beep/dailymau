@@ -462,6 +462,20 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .prof-photo:hover::after{content:'Cambiar';position:absolute;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;font-size:12px}
 .prof-photo-btns{display:flex;gap:8px}
 .prof-photo-btns button{font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg-2);color:var(--ink);cursor:pointer}
+
+.install-banner{position:fixed;left:50%;bottom:-200px;transform:translateX(-50%);width:calc(100% - 28px);max-width:420px;background:var(--bg-2);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.18);padding:16px 16px 16px 14px;display:flex;gap:13px;align-items:flex-start;z-index:400;transition:bottom .35s cubic-bezier(.2,.8,.2,1)}
+.install-banner.show{bottom:18px}
+.install-ico{flex-shrink:0}
+.install-body{flex:1;min-width:0}
+.install-title{font-weight:700;font-size:14.5px;color:var(--ink);margin-bottom:3px}
+.install-text{font-size:12.5px;color:var(--ink-2);line-height:1.5}
+.install-text svg{vertical-align:-2px;display:inline}
+.install-cta{margin-top:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:13.5px;font-weight:600;cursor:pointer}
+.install-cta:active{transform:scale(.97)}
+.install-x{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--ink-3);cursor:pointer;padding:4px;display:grid;place-items:center;border-radius:6px}
+.install-x:hover{background:var(--bg-3);color:var(--ink)}
+
+.prof-install{margin-top:16px;padding:13px 14px;background:var(--bg-3);border-radius:12px;display:flex;align-items:center;gap:12px;justify-content:space-between}
 </style>
 </head>
 <body>
@@ -638,6 +652,7 @@ function openProfile(){
       </div>
       <div class="field"><label>Tu nombre</label><input id="profName" value="${escapeAttr(PROFILE.name||'')}" placeholder="Ej: ${escapeAttr(getUserEmail().split('@')[0])}" maxlength="40"></div>
       <div style="font-size:12px;color:var(--ink-3);margin-top:6px">Así te verán en tus tareas y mensajes.</div>
+      ${!isStandalone()?`<div class="prof-install" id="profInstall"><div><div style="font-weight:600;font-size:13.5px;color:var(--ink)">📱 Instalar en tu celular</div><div style="font-size:12px;color:var(--ink-3);margin-top:2px">Tenla como app, con ícono propio y a pantalla completa.</div></div><button class="btn-ghost" id="profInstallBtn" style="white-space:nowrap">Ver cómo</button></div>`:''}
     </div>
     <div class="modal-f"><div></div><div style="display:flex;gap:8px"><button class="btn-ghost" id="profCancel">Cancelar</button><button class="btn-primary" id="profSave">Guardar</button></div></div>
   </div>`;
@@ -649,6 +664,7 @@ function openProfile(){
   pp.onclick=()=>fileInp.click();
   fileInp.onchange=(e)=>{const f=e.target.files[0];if(!f)return;if(f.size>500000){toast('La foto debe pesar menos de 500KB');return}const rd=new FileReader();rd.onload=()=>{newPhoto=rd.result;pp.style.backgroundImage=`url('${newPhoto}')`;pp.textContent=''};rd.readAsDataURL(f)};
   const delBtn=document.getElementById('profPhotoDel');if(delBtn)delBtn.onclick=()=>{newPhoto='';pp.style.backgroundImage='';pp.textContent=myInitials()};
+  const _pi=document.getElementById('profInstallBtn');if(_pi)_pi.onclick=()=>{ov.classList.remove('show');setTimeout(()=>showInstallBanner(true),200)};
   document.getElementById('profCancel').onclick=()=>ov.classList.remove('show');
   document.getElementById('profSave').onclick=()=>{
     PROFILE.name=document.getElementById('profName').value.trim();
@@ -724,7 +740,7 @@ window.addEventListener('beforeunload',flushSave);
 async function cloudInit(){
   if(CLOUD.key.startsWith('__')){cloudReady=false;setCloud('off');return}
   const res=await cloudLoad();
-  if(res===true){cloudReady=true;rollover();render();setCloud('saved');return}
+  if(res===true){cloudReady=true;rollover();render();setCloud('saved');maybeShowInstallHint();return}
   if(res===false){cloudReady=TASKS.length>0;setCloud(TASKS.length>0?'saved':'error');return}
   // res===null → fila del usuario vacía (primera vez en esta cuenta)
   cloudReady=true;
@@ -1691,6 +1707,50 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   });
 }
+
+// === PWA: sugerencia de instalación (sutil, una vez) ===
+let _deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();_deferredPrompt=e;maybeShowInstallHint()});
+function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
+function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.MSStream}
+function isAndroid(){return /android/i.test(navigator.userAgent)}
+function installDismissed(){try{return localStorage.getItem('jd_install_hint')==='done'}catch(e){return false}}
+function markInstallDone(){try{localStorage.setItem('jd_install_hint','done')}catch(e){}}
+function markInstallShow(){try{localStorage.removeItem('jd_install_hint')}catch(e){}}
+function maybeShowInstallHint(){
+  // No mostrar si: ya instalada, ya cerrada antes, o no es celular
+  if(isStandalone()||installDismissed())return;
+  if(!isIOS()&&!isAndroid()&&!_deferredPrompt)return;
+  // Esperar a que el usuario esté logueado y haya usado un poco la app
+  if(!cloudReady)return;
+  setTimeout(showInstallBanner,2500);
+}
+function showInstallBanner(force){
+  if(document.getElementById('installBanner')||isStandalone())return;
+  if(!force&&installDismissed())return;
+  const ios=isIOS();const android=isAndroid();const desktop=!ios&&!android;
+  const b=document.createElement('div');b.id='installBanner';b.className='install-banner';
+  b.innerHTML=`
+    <button class="install-x" id="installX">${svg('<path d="M18 6 6 18M6 6l12 12"/>',16)}</button>
+    <div class="install-ico"><svg width="38" height="38" viewBox="0 0 120 120"><rect width="120" height="120" rx="28" fill="#16243B"/><path d="M38 60 L52 74" fill="none" stroke="#E8794B" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M52 74 L82 42" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="install-body">
+      <div class="install-title">Instala jazzdoit ${desktop?'en tu computador':'en tu celular'}</div>
+      <div class="install-text">${ios
+        ? 'Toca <b>Compartir</b> '+svg('<path d="M12 2v13M7 7l5-5 5 5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" fill="none"/>',13)+' abajo y luego <b>“Agregar a inicio”</b>. Tendrás la app con su ícono, a pantalla completa.'
+        : desktop
+        ? 'Busca el ícono de instalar '+svg('<path d="M12 3v12M8 11l4 4 4-4M4 19h16" fill="none"/>',13)+' en la barra de direcciones del navegador, o usa el menú del navegador → “Instalar jazzdoit”.'
+        : 'Tócala una vez para instalarla y tenerla como app, con su ícono y a pantalla completa.'}</div>
+      ${(ios||desktop)?'':'<button class="install-cta" id="installCta">Instalar app</button>'}
+    </div>`;
+  document.body.appendChild(b);
+  requestAnimationFrame(()=>b.classList.add('show'));
+  document.getElementById('installX').onclick=()=>{markInstallDone();b.classList.remove('show');setTimeout(()=>b.remove(),300)};
+  const cta=document.getElementById('installCta');
+  if(cta)cta.onclick=async()=>{
+    if(_deferredPrompt){_deferredPrompt.prompt();const r=await _deferredPrompt.userChoice;_deferredPrompt=null;markInstallDone();b.classList.remove('show');setTimeout(()=>b.remove(),300)}
+  };
+}
+window.addEventListener('appinstalled',()=>{markInstallDone();const b=document.getElementById('installBanner');if(b)b.remove()});
 </script>
 </body>
 </html>
