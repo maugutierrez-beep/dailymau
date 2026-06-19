@@ -481,7 +481,9 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .gvc-credit-login{border-top:none;margin-top:20px;padding-bottom:0}
 .gvc-credit-login .gvc-logo{height:15px}
 .gvc-logo{height:14px;width:auto;opacity:.8;display:none;vertical-align:middle}
-.gvc-credit-tag{font-size:10.5px;color:var(--ink-3);opacity:.7;letter-spacing:.01em;white-space:nowrap}
+.gvc-credit-tag{font-size:10.5px;color:var(--ink-3);opacity:.75;letter-spacing:.01em;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.flag-co{border-radius:2px;vertical-align:middle;flex-shrink:0}
+.globe-ico{vertical-align:middle;flex-shrink:0}
 /* Mostrar el logo según el tema */
 :root[data-theme="light"] .gvc-logo-light,
 :root:not([data-theme="dark"]) .gvc-logo-light{display:inline-block}
@@ -506,7 +508,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
     <div class="gvc-credit gvc-credit-login">
       <img class="gvc-logo gvc-logo-light" src="gvc-navy.png" alt="GVC Capital">
       <img class="gvc-logo gvc-logo-dark" src="gvc-white.png" alt="GVC Capital">
-      <span class="gvc-credit-tag">· From 🇨🇴 to the 🌍</span>
+      <span class="gvc-credit-tag">· From <svg class="flag-co" viewBox="0 0 24 16" width="15" height="10"><rect width="24" height="8" fill="#FCD116"/><rect y="8" width="24" height="4" fill="#003893"/><rect y="12" width="24" height="4" fill="#CE1126"/></svg> to the <svg class="globe-ico" viewBox="0 0 24 24" width="12" height="12"><circle cx="12" cy="12" r="10" fill="#3b82a8"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20M4 7h16M4 17h16" fill="none" stroke="#fff" stroke-width="1" opacity=".7"/></svg></span>
     </div>
   </div>
 </div>
@@ -528,7 +530,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
     <div class="gvc-credit">
       <img class="gvc-logo gvc-logo-light" src="gvc-navy.png" alt="GVC Capital">
       <img class="gvc-logo gvc-logo-dark" src="gvc-white.png" alt="GVC Capital">
-      <span class="gvc-credit-tag">· From 🇨🇴 to the 🌍</span>
+      <span class="gvc-credit-tag">· From <svg class="flag-co" viewBox="0 0 24 16" width="15" height="10"><rect width="24" height="8" fill="#FCD116"/><rect y="8" width="24" height="4" fill="#003893"/><rect y="12" width="24" height="4" fill="#CE1126"/></svg> to the <svg class="globe-ico" viewBox="0 0 24 24" width="12" height="12"><circle cx="12" cy="12" r="10" fill="#3b82a8"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20M4 7h16M4 17h16" fill="none" stroke="#fff" stroke-width="1" opacity=".7"/></svg></span>
     </div>
   </aside>
   <div class="backdrop" id="backdrop"></div>
