@@ -1421,7 +1421,7 @@ function valLabel(f,v){if(f==='project')return projName(v);if(f==='type')return 
 function logH(t,txt){t.history=t.history||[];t.history.push({d:todayStr(),t:txt})}
 
 /* ---- ACCIONES ---- */
-function nextRepeatDate(base,rep){const d=new Date((base||todayStr())+'T00:00');if(rep==='daily')d.setDate(d.getDate()+1);else if(rep==='weekly')d.setDate(d.getDate()+7);else if(rep==='biweekly')d.setDate(d.getDate()+14);else if(rep==='monthly')d.setMonth(d.getMonth()+1);else return null;return localISO(d)}
+function nextRepeatDate(base,rep){const d=new Date((base||todayStr())+'T00:00');if(isNaN(d.getTime()))return null;if(rep==='daily')d.setDate(d.getDate()+1);else if(rep==='weekly')d.setDate(d.getDate()+7);else if(rep==='biweekly')d.setDate(d.getDate()+14);else if(rep==='monthly')d.setMonth(d.getMonth()+1);else return null;return localISO(d)}
 function spawnRecurrence(t){if(!t.repeat)return;const nd=nextRepeatDate(t.due||todayStr(),t.repeat);if(!nd)return;const c=JSON.parse(JSON.stringify(t));c.id=uid();c.status='no_iniciado';c.completedAt='';c.carried=0;c.due=nd;c.createdAt=todayStr();c.history=[{d:todayStr(),t:'Creada (recurrente)'}];if(c.subtasks)c.subtasks.forEach(s=>s.done=false);TASKS.unshift(c)}
 function toggleComplete(id){const t=TASKS.find(x=>x.id===id);if(!t)return;if(isDone(t)){t.status='en_proceso';t.completedAt='';logH(t,'Reabierta')}else{t.status='completado';t.completedAt=todayStr();logH(t,'Realizada');spawnRecurrence(t)}save()}
 function snooze(id){const t=TASKS.find(x=>x.id===id);if(!t)return;t.due=addD(1);if(t.status==='no_iniciado')t.status='pospuesto';logH(t,'Pasada a mañana');save()}
