@@ -589,6 +589,7 @@ const I18N_EN = {"Get it done": "Get it done", "Iniciar sesión": "Sign in", "Cr
 function detectLang(){try{const s=localStorage.getItem('jd_lang');if(s)return s;}catch(e){}const n=(navigator.language||'en').toLowerCase();return n.startsWith('es')?'es':'en';}
 let LANG=detectLang();try{document.documentElement.lang=LANG;}catch(e){}
 function t(s){if(LANG==='en'&&I18N_EN[s])return I18N_EN[s];return s;}
+function T(s){return t(s);}  // alias para evitar colision con parametro 't' (task)
 function applyStaticI18n(){document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'))});document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.getAttribute('data-i18n-ph'))});}
 function setLang(l){LANG=l;try{localStorage.setItem('jd_lang',l)}catch(e){}document.documentElement.lang=l;applyStaticI18n();if(typeof render==='function')render();}
 
@@ -675,21 +676,21 @@ function openProfile(){
   const ov=document.getElementById('overlay');
   const photo=myPhoto();
   const html=`<div class="modal prof-modal">
-    <div class="modal-h"><div><div style="font-family:var(--font-display);font-size:20px;font-weight:600">${t('Mi perfil')}</div><div style="font-size:12.5px;color:var(--ink-3);margin-top:2px">${escapeH(getUserEmail())}</div></div></div>
+    <div class="modal-h"><div><div style="font-family:var(--font-display);font-size:20px;font-weight:600">${T('Mi perfil')}</div><div style="font-size:12.5px;color:var(--ink-3);margin-top:2px">${escapeH(getUserEmail())}</div></div></div>
     <div class="modal-b">
       <div class="prof-photo-wrap">
         <div class="prof-photo" id="profPhoto" style="${photo?`background-image:url('${photo}')`:''}">${photo?'':myInitials()}</div>
         <div class="prof-photo-btns">
-          <button id="profPhotoUp">${t('Subir foto')}</button>
+          <button id="profPhotoUp">${T('Subir foto')}</button>
           ${photo?'<button id="profPhotoDel">Quitar</button>':''}
         </div>
         <input type="file" id="profFile" accept="image/*" style="display:none">
       </div>
-      <div class="field"><label>${t('Tu nombre')}</label><input id="profName" value="${escapeAttr(PROFILE.name||'')}" placeholder="Ej: ${escapeAttr(getUserEmail().split('@')[0])}" maxlength="40"></div>
-      <div style="font-size:12px;color:var(--ink-3);margin-top:6px">${t('Así te verán en tus tareas y mensajes.')}</div>
+      <div class="field"><label>${T('Tu nombre')}</label><input id="profName" value="${escapeAttr(PROFILE.name||'')}" placeholder="Ej: ${escapeAttr(getUserEmail().split('@')[0])}" maxlength="40"></div>
+      <div style="font-size:12px;color:var(--ink-3);margin-top:6px">${T('Así te verán en tus tareas y mensajes.')}</div>
       ${!isStandalone()?`<div class="prof-install" id="profInstall"><div><div style="font-weight:600;font-size:13.5px;color:var(--ink)">📱 Instalar en tu celular</div><div style="font-size:12px;color:var(--ink-3);margin-top:2px">Tenla como app, con ícono propio y a pantalla completa.</div></div><button class="btn-ghost" id="profInstallBtn" style="white-space:nowrap">Ver cómo</button></div>`:''}
     </div>
-    <div class="modal-f"><div></div><div style="display:flex;gap:8px"><button class="btn-ghost" id="profCancel">${t('Cancelar')}</button><button class="btn-primary" id="profSave">${t('Guardar')}</button></div></div>
+    <div class="modal-f"><div></div><div style="display:flex;gap:8px"><button class="btn-ghost" id="profCancel">${T('Cancelar')}</button><button class="btn-primary" id="profSave">${T('Guardar')}</button></div></div>
   </div>`;
   ov.innerHTML=html;ov.classList.add('show');
   let newPhoto=photo;
@@ -800,8 +801,8 @@ function showWelcome(){
   const cards=Object.keys(TEMPLATES).map(k=>{const t=TEMPLATES[k];return `<button class="wel-card" data-tpl="${k}"><div class="wel-card-name">${t.name}</div><div class="wel-card-desc">${t.desc}</div></button>`}).join('');
   ov.innerHTML=`<div class="modal" style="max-width:520px">
     <div class="modal-h"><div><div style="font-family:var(--font-display);font-size:22px;font-weight:600">¡Bienvenido a jazzdoit! 🎉</div><div style="font-size:13px;color:var(--ink-3);margin-top:4px">¿Cómo te llamas? Luego elige un punto de partida.</div></div></div>
-    <div class="modal-b"><div class="field" style="margin-bottom:16px"><label>${t('Tu nombre')}</label><input id="welName" placeholder="${t('Tu nombre')}" maxlength="40" style="width:100%"></div><div class="wel-grid">${cards}</div>
-      <button class="wel-skip" id="welSkip">${t('Empezar desde cero')}</button>
+    <div class="modal-b"><div class="field" style="margin-bottom:16px"><label>${T('Tu nombre')}</label><input id="welName" placeholder="${T('Tu nombre')}" maxlength="40" style="width:100%"></div><div class="wel-grid">${cards}</div>
+      <button class="wel-skip" id="welSkip">${T('Empezar desde cero')}</button>
     </div></div>`;
   document.body.appendChild(ov);
   ov.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{const nm=document.getElementById('welName');if(nm&&nm.value.trim())PROFILE.name=nm.value.trim();applyTemplate(b.dataset.tpl);ov.remove();state.view='dia';render();cloudSave();confetti(window.innerWidth/2,window.innerHeight/3);toast('¡Listo! Tu espacio está armado')});
@@ -915,7 +916,7 @@ function toggleCollapse(k){COLLAPSE[k]=!COLLAPSE[k];try{localStorage.setItem('da
 function toggleDayGroup(pid){const k='dg_'+pid;COLLAPSE[k]=!COLLAPSE[k];try{localStorage.setItem('dailymau_collapse',JSON.stringify(COLLAPSE))}catch(e){}render()}
 function secHeader(label,key){const open=!COLLAPSE[key];return `<button class="nav-sec-toggle" data-collapse="${key}"><span>${label}</span><svg class="chev ${open?'open':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>`}
 function renderNav(){
-  let h=`<div class="nav-section">${t('Vistas')}</div>`;
+  let h=`<div class="nav-section">${T('Vistas')}</div>`;
   h+=navItem(VIEWS.find(v=>v.id==='dia'))+navItem(VIEWS.find(v=>v.id==='hoy'))+navItem(VIEWS.find(v=>v.id==='realizadas'));
   h+=secHeader('Proyectos','proyectos');
   if(!COLLAPSE.proyectos){
@@ -923,7 +924,7 @@ function renderNav(){
       .sort((a,b)=>b.open-a.open)
       .forEach(({p,open})=>{const a=state.view==='proyectos'&&state.proj===p.id;
       h+=`<button class="nav-item ${a?'active':''}" data-proj="${p.id}"><span style="width:9px;height:9px;border-radius:50%;background:${p.color}"></span><span style="flex:1">${escapeH(p.name)}</span>${open?`<span class="count">${open}</span>`:''}</button>`});
-    h+=`<button class="nav-item nav-add" id="newProj"><span class="ico">${svg('<path d="M12 5v14M5 12h14"/>',15)}</span>${t('Nuevo proyecto')}</button>`;
+    h+=`<button class="nav-item nav-add" id="newProj"><span class="ico">${svg('<path d="M12 5v14M5 12h14"/>',15)}</span>${T('Nuevo proyecto')}</button>`;
   }
   h+=secHeader('Personas','personas');
   if(!COLLAPSE.personas){
@@ -931,7 +932,7 @@ function renderNav(){
       .sort((a,b)=>b.op-a.op)
       .forEach(({n,op})=>{const a=state.view==='personas'&&state.person===n;
       h+=`<button class="nav-item ${a?'active':''}" data-personnav="${escapeAttr(n)}"><span class="av-sm" style="background:${colorFor(n)}">${initials(n)}</span><span style="flex:1">${n==='Yo'?'Yo':escapeH(n)}</span>${op?`<span class="count">${op}</span>`:''}</button>`});
-    h+=`<button class="nav-item nav-add" id="newPerson"><span class="ico">${svg('<path d="M12 5v14M5 12h14"/>',15)}</span>${t('Nueva persona')}</button>`;
+    h+=`<button class="nav-item nav-add" id="newPerson"><span class="ico">${svg('<path d="M12 5v14M5 12h14"/>',15)}</span>${T('Nueva persona')}</button>`;
   }
   h+=secHeader('Más','mas');
   if(!COLLAPSE.mas){
@@ -1064,9 +1065,9 @@ function taskRow(t){
       </div>
     </div>
     <div class="row-actions">
-      <button class="ra" data-act="snooze" data-id="${t.id}" title="${t('Pasar a mañana')}">${svg(I.snooze,14)}</button>
-      <button class="ra" data-act="delegate" data-id="${t.id}" title="${t('Asignar a persona')}">${svg(I.delegate,14)}</button>
-      <button class="ra" data-act="note" data-id="${t.id}" title="${t('Nota rápida')}">${svg(I.note,14)}</button>
+      <button class="ra" data-act="snooze" data-id="${t.id}" title="${T('Pasar a mañana')}">${svg(I.snooze,14)}</button>
+      <button class="ra" data-act="delegate" data-id="${t.id}" title="${T('Asignar a persona')}">${svg(I.delegate,14)}</button>
+      <button class="ra" data-act="note" data-id="${t.id}" title="${T('Nota rápida')}">${svg(I.note,14)}</button>
     </div>
   </div>`;
 }
@@ -1087,7 +1088,7 @@ function renderSeguimientos(){
         </div>
         ${t.nextAction?`<div class="t-meta"><span class="who" style="color:var(--gold)">${svg(I.arrow,11)} ${escapeH(t.nextAction)}</span></div>`:''}
       </div>
-      <div class="row-actions"><button class="ra" data-act="snooze" data-id="${t.id}" title="${t('Reprogramar')}">${svg(I.snooze,14)}</button><button class="ra" data-act="note" data-id="${t.id}">${svg(I.note,14)}</button></div>
+      <div class="row-actions"><button class="ra" data-act="snooze" data-id="${t.id}" title="${T('Reprogramar')}">${svg(I.snooze,14)}</button><button class="ra" data-act="note" data-id="${t.id}">${svg(I.note,14)}</button></div>
     </div>`}).join('');
 }
 
@@ -1105,7 +1106,7 @@ function renderProjectView(){
   let h='';
   if(state.proj!=='general')h+=`<div class="proj-toolbar"><button class="del-proj" data-delproj="${state.proj}">${svg(I.trash,14)} Eliminar proyecto</button></div>`;
   h+=`<div class="b-add" data-addproj="1" style="margin:0 0 10px">${PLUS}Agregar tarea</div>`;
-  if(!all.length)return h+`<div class="empty" style="padding:36px 20px"><h3>Sin pendientes</h3><p>${t('Este proyecto no tiene tareas activas.')}</p></div>`;
+  if(!all.length)return h+`<div class="empty" style="padding:36px 20px"><h3>Sin pendientes</h3><p>${T('Este proyecto no tiene tareas activas.')}</p></div>`;
   const today=all.filter(t=>t.due&&daysFrom(t.due)<=0).sort(byDate);
   const soon=all.filter(t=>t.due&&daysFrom(t.due)>0).sort(byDate);
   const nodate=all.filter(t=>!t.due).sort(byDate);
@@ -1172,7 +1173,7 @@ function renderDay(){
   if(tmr)h+=`<button class="day-bring" id="bringT">${svg(I.arrow,14)} Traer ${tmr} de mañana a hoy</button>`;
   if(today.length)h+=`<button class="day-copy" id="copyDayBtn">${svg(I.copy||I.layers,14)} Copiar mi día</button>`;
   h+=`</div>`;
-  if(!today.length)return h+`<div class="empty" style="padding:30px 20px"><h3>${t('Día libre')}</h3><p>${t('Agrega tareas o trae las de mañana.')}</p></div>`;
+  if(!today.length)return h+`<div class="empty" style="padding:30px 20px"><h3>${T('Día libre')}</h3><p>${T('Agrega tareas o trae las de mañana.')}</p></div>`;
   const byproj={};today.forEach(t=>{(byproj[t.project]=byproj[t.project]||[]).push(t)});
   const projOrder=PROJECTS.map(p=>p.id);const order=Object.keys(byproj).sort((a,b)=>{const ia=projOrder.indexOf(a),ib=projOrder.indexOf(b);return (ia<0?999:ia)-(ib<0?999:ib)});
   order.forEach(pid=>{const op=!COLLAPSE['dg_'+pid];const arr=byproj[pid].sort((a,b)=>{const fa=(b.flag?1:0)-(a.flag?1:0);if(fa!==0)return fa;return (a.createdAt||'').localeCompare(b.createdAt||'')||(a.id||'').localeCompare(b.id||'')});
@@ -1183,10 +1184,10 @@ function renderDay(){
 function dayRow(t){const sup=!isMine(t);const star=t.flag;
   return `<div class="task drow ${star?'pinned':''}" data-id="${t.id}" draggable="true">
     <button class="check" data-check="${t.id}">${svg(I.check,11)}</button>
-    <div class="drow-main"><span class="t-title">${escapeH(t.title)}</span>${t.repeat?`<span class="mini-badge" title="${t('Se repite')}">↻</span>`:''}${t.remind?`<span class="mini-badge" title="${t('Recordatorio por correo')}">⏰</span>`:''}${(t.subtasks&&t.subtasks.length)?`<span class="mini-badge" title="${t('Subtareas')}">☑ ${t.subtasks.filter(s=>s.done).length}/${t.subtasks.length}</span>`:''}${t.nextAction?`<span class="drow-na">${svg(I.arrow,10)} ${escapeH(t.nextAction)}</span>`:''}${sup&&staleDays(t)>=3?`<span class="wait-badge" title="${t('Esperando respuesta')}">${staleDays(t)}d</span>`:''}</div>
+    <div class="drow-main"><span class="t-title">${escapeH(t.title)}</span>${t.repeat?`<span class="mini-badge" title="${T('Se repite')}">↻</span>`:''}${t.remind?`<span class="mini-badge" title="${T('Recordatorio por correo')}">⏰</span>`:''}${(t.subtasks&&t.subtasks.length)?`<span class="mini-badge" title="${T('Subtareas')}">☑ ${t.subtasks.filter(s=>s.done).length}/${t.subtasks.length}</span>`:''}${t.nextAction?`<span class="drow-na">${svg(I.arrow,10)} ${escapeH(t.nextAction)}</span>`:''}${sup&&staleDays(t)>=3?`<span class="wait-badge" title="${T('Esperando respuesta')}">${staleDays(t)}d</span>`:''}</div>
     <div class="drow-side">
       ${sup?`<span class="drow-resp"><span class="av" style="background:${colorFor(respList(t)[0]||'')}">${initials(respList(t)[0]||'?')}</span>${escapeH(respFull(t))}</span>`:''}
-      <span class="row-actions"><button class="ra ra-star ${star?'starred':''}" data-act="star" data-id="${t.id}" title="${star?'Quitar prioridad':'Marcar prioridad'}">${svg(I.star,17)}</button><button class="ra ra-snz" data-act="snooze" data-id="${t.id}" title="${t('Mañana')}">${svg(I.snooze,18)}</button><button class="ra ra-smd" data-act="someday" data-id="${t.id}" title="${t('Algún día')}">${svg(I.fwd,18)}</button></span>
+      <span class="row-actions"><button class="ra ra-star ${star?'starred':''}" data-act="star" data-id="${t.id}" title="${star?'Quitar prioridad':'Marcar prioridad'}">${svg(I.star,17)}</button><button class="ra ra-snz" data-act="snooze" data-id="${t.id}" title="${T('Mañana')}">${svg(I.snooze,18)}</button><button class="ra ra-smd" data-act="someday" data-id="${t.id}" title="${T('Algún día')}">${svg(I.fwd,18)}</button></span>
     </div>
   </div>`;
 }
@@ -1321,15 +1322,15 @@ function renderCalendar(){
     cols+=`<div class="day-col ${i===0?'today':''}" data-day="${date}"><h4>${label}<span>${dnum}</span></h4>${arr.map(dcard).join('')||'<div class="col-empty">—</div>'}</div>`;
   });
   cols+=`<div class="day-col" data-day="none"><h4>Sin fecha<span>${noDate.length}</span></h4>${noDate.map(dcard).join('')||'<div class="col-empty">—</div>'}</div>`;
-  if(later.length)cols+=`<div class="day-col nodrop"><h4>${t('Más adelante')}<span>${later.length}</span></h4>${later.map(dcard).join('')}</div>`;
+  if(later.length)cols+=`<div class="day-col nodrop"><h4>${T('Más adelante')}<span>${later.length}</span></h4>${later.map(dcard).join('')}</div>`;
   return `<div class="dnd-hint">${svg(I.arrow,14)} Arrastra una tarjeta a otro día para reprogramarla — o usa ◀ ▶ en el celular.</div><div class="week-board">${cols}</div>`;
 }
 function dcard(t){const sup=!isMine(t);
   return `<div class="dcard" draggable="true" data-id="${t.id}">
     <div class="dc-title"><span class="md" style="background:${proj(t.project).color}"></span><span>${escapeH(t.title)}</span></div>
-    <div class="dc-bot"><button class="mv" data-mv="-1" data-id="${t.id}" title="${t('Día anterior')}">◀</button>
+    <div class="dc-bot"><button class="mv" data-mv="-1" data-id="${t.id}" title="${T('Día anterior')}">◀</button>
       <span class="dc-proj">${sup?escapeH(respFull(t)):projName(t.project)}</span>
-      <button class="mv" data-mv="1" data-id="${t.id}" title="${t('Día siguiente')}">▶</button></div>
+      <button class="mv" data-mv="1" data-id="${t.id}" title="${T('Día siguiente')}">▶</button></div>
   </div>`;
 }
 function bindMini(){
@@ -1445,28 +1446,28 @@ function renderDetail(){
   const opt=(arr,val)=>arr.map(o=>`<option value="${o.id}" ${o.id===val?'selected':''}>${o.name}</option>`).join('');
   panel.innerHTML=`
     <div class="det-top"><div class="left"><button class="icon-btn" data-d="dup" title="Duplicar">${svg(I.layers,16)}</button></div>
-      <button class="icon-btn" data-d="close" title="${t('Cerrar')}">${svg('<path d="M18 6 6 18M6 6l12 12"/>',16)}</button></div>
+      <button class="icon-btn" data-d="close" title="${T('Cerrar')}">${svg('<path d="M18 6 6 18M6 6l12 12"/>',16)}</button></div>
     <div class="det-body">
       <textarea class="det-title" id="dTitle" rows="1">${escapeH(t.title)}</textarea>
-      <textarea class="det-desc" id="dDesc" placeholder="${t('Añade una descripción…')}">${escapeH(t.description)}</textarea>
-      <div class="det-section"><div class="next-action"><span class="na-ico">${svg(I.arrow,15)}</span><div style="flex:1"><div class="na-l">${t('Próxima acción')}</div><input id="dNext" value="${escapeAttr(t.nextAction)}" placeholder="${t('¿Cuál es el siguiente paso concreto?')}"></div></div></div>
+      <textarea class="det-desc" id="dDesc" placeholder="${T('Añade una descripción…')}">${escapeH(t.description)}</textarea>
+      <div class="det-section"><div class="next-action"><span class="na-ico">${svg(I.arrow,15)}</span><div style="flex:1"><div class="na-l">${T('Próxima acción')}</div><input id="dNext" value="${escapeAttr(t.nextAction)}" placeholder="${T('¿Cuál es el siguiente paso concreto?')}"></div></div></div>
       <div class="det-section"><div class="det-label">Subtareas${(t.subtasks&&t.subtasks.length)?` <span style="color:var(--ink-3);font-weight:400">(${t.subtasks.filter(s=>s.done).length}/${t.subtasks.length})</span>`:''}</div>
         <div class="subt-list">${(t.subtasks||[]).map((s,i)=>`<label class="subt"><input type="checkbox" data-subt="${i}" ${s.done?'checked':''}><span class="${s.done?'subt-done':''}">${escapeH(s.text)}</span><button class="subt-del" data-subtdel="${i}">${svg('<path d="M18 6 6 18M6 6l12 12"/>',12)}</button></label>`).join('')}</div>
-        <div class="note-add"><input id="dSubt" placeholder="${t('Agregar subtarea…')}"><button id="dSubtAdd">${t('Añadir')}</button></div>
+        <div class="note-add"><input id="dSubt" placeholder="${T('Agregar subtarea…')}"><button id="dSubtAdd">${T('Añadir')}</button></div>
       </div>
       <div class="det-section"><div class="field-grid">
-        <div class="field"><label>${t('Proyecto')}</label><select data-f="project">${opt(PROJECTS,t.project)}</select></div>
-        <div class="field"><label>${t('Responsables')}</label><button type="button" class="resp-btn" id="respBtn">${escapeH(respFull(t))}</button></div>
-        <div class="field"><label>${t('Estado')}</label><select data-f="status">${opt(STATUSES,t.status)}</select></div>
-        <div class="field"><label>${t('Para el día')}</label><input type="date" data-f="due" value="${t.due}"></div>
-        <div class="field"><label>${t('Repetir')}</label><select data-f="repeat"><option value="" ${!t.repeat?'selected':''}>${t('No repetir')}</option><option value="daily" ${t.repeat==='daily'?'selected':''}>${t('Cada día')}</option><option value="weekly" ${t.repeat==='weekly'?'selected':''}>${t('Cada semana')}</option><option value="biweekly" ${t.repeat==='biweekly'?'selected':''}>${t('Cada 2 semanas')}</option><option value="monthly" ${t.repeat==='monthly'?'selected':''}>${t('Cada mes')}</option></select></div>
-        <div class="field"><label>${t('Recordar por correo')}</label><select data-f="remind"><option value="" ${!t.remind?'selected':''}>${t('Sin recordatorio')}</option><option value="same" ${t.remind==='same'?'selected':''}>${t('El día de la tarea')}</option><option value="before1" ${t.remind==='before1'?'selected':''}>${t('1 día antes')}</option><option value="before2" ${t.remind==='before2'?'selected':''}>${t('2 días antes')}</option></select></div>
-        <div class="field"><label>${t('Próx. seguimiento')}</label><input type="date" data-f="nextReview" value="${t.nextReview}"></div>
-        <div class="field"><label>${t('Persona relacionada')}</label><input data-f="relatedPerson" value="${escapeAttr(t.relatedPerson)}"></div>
-        <div class="field"><label>${t('Canal')}</label><select data-f="channel">${opt(CHANNELS,t.channel)}</select></div>
-        <div class="field full"><label>${t('Enlaces / archivos')}</label><input data-f="links" value="${escapeAttr(t.links)}" placeholder="${t('URL o referencia')}"></div>
+        <div class="field"><label>${T('Proyecto')}</label><select data-f="project">${opt(PROJECTS,t.project)}</select></div>
+        <div class="field"><label>${T('Responsables')}</label><button type="button" class="resp-btn" id="respBtn">${escapeH(respFull(t))}</button></div>
+        <div class="field"><label>${T('Estado')}</label><select data-f="status">${opt(STATUSES,t.status)}</select></div>
+        <div class="field"><label>${T('Para el día')}</label><input type="date" data-f="due" value="${t.due}"></div>
+        <div class="field"><label>${T('Repetir')}</label><select data-f="repeat"><option value="" ${!t.repeat?'selected':''}>${T('No repetir')}</option><option value="daily" ${t.repeat==='daily'?'selected':''}>${T('Cada día')}</option><option value="weekly" ${t.repeat==='weekly'?'selected':''}>${T('Cada semana')}</option><option value="biweekly" ${t.repeat==='biweekly'?'selected':''}>${T('Cada 2 semanas')}</option><option value="monthly" ${t.repeat==='monthly'?'selected':''}>${T('Cada mes')}</option></select></div>
+        <div class="field"><label>${T('Recordar por correo')}</label><select data-f="remind"><option value="" ${!t.remind?'selected':''}>${T('Sin recordatorio')}</option><option value="same" ${t.remind==='same'?'selected':''}>${T('El día de la tarea')}</option><option value="before1" ${t.remind==='before1'?'selected':''}>${T('1 día antes')}</option><option value="before2" ${t.remind==='before2'?'selected':''}>${T('2 días antes')}</option></select></div>
+        <div class="field"><label>${T('Próx. seguimiento')}</label><input type="date" data-f="nextReview" value="${t.nextReview}"></div>
+        <div class="field"><label>${T('Persona relacionada')}</label><input data-f="relatedPerson" value="${escapeAttr(t.relatedPerson)}"></div>
+        <div class="field"><label>${T('Canal')}</label><select data-f="channel">${opt(CHANNELS,t.channel)}</select></div>
+        <div class="field full"><label>${T('Enlaces / archivos')}</label><input data-f="links" value="${escapeAttr(t.links)}" placeholder="${T('URL o referencia')}"></div>
       </div></div>
-      <div class="det-section"><div class="det-label">${t('Notas')}</div><div class="note-add"><input id="dNote" placeholder="${t('Agregar nota…')}"><button id="dNoteAdd">${t('Añadir')}</button></div>${(t.notes||[]).slice().reverse().map(n=>`<div class="note"><div class="nt-date">${n.date}</div><div class="nt-txt">${escapeH(n.text)}</div></div>`).join('')||'<div style="font-size:12.5px;color:var(--ink-3)">Sin notas aún.</div>'}</div>
+      <div class="det-section"><div class="det-label">${T('Notas')}</div><div class="note-add"><input id="dNote" placeholder="${T('Agregar nota…')}"><button id="dNoteAdd">${T('Añadir')}</button></div>${(t.notes||[]).slice().reverse().map(n=>`<div class="note"><div class="nt-date">${n.date}</div><div class="nt-txt">${escapeH(n.text)}</div></div>`).join('')||'<div style="font-size:12.5px;color:var(--ink-3)">Sin notas aún.</div>'}</div>
       <div class="det-btns">
         <button class="dbtn green" data-d="complete">${svg(I.check,14)} ${isDone(t)?'Reabrir':'Marcar realizado'}</button>
         <button class="dbtn" data-d="snooze">${svg(I.snooze,14)} A mañana</button>
@@ -1474,7 +1475,7 @@ function renderDetail(){
         <button class="dbtn" data-d="delegate">${svg(I.delegate,14)} Asignar</button>
         <button class="dbtn del" data-d="delete">${svg(I.trash,14)} Eliminar</button>
       </div>
-      <div class="det-section"><div class="det-label">${t('Historial')}</div>${(t.history||[]).slice().reverse().map(h=>`<div class="hist"><span class="hd">${h.d}</span><span>${escapeH(h.t)}</span></div>`).join('')}<div class="hist" style="margin-top:6px"><span class="hd">${t('Creada')}</span><span>${t.createdAt}</span></div></div>
+      <div class="det-section"><div class="det-label">${T('Historial')}</div>${(t.history||[]).slice().reverse().map(h=>`<div class="hist"><span class="hd">${h.d}</span><span>${escapeH(h.t)}</span></div>`).join('')}<div class="hist" style="margin-top:6px"><span class="hd">${T('Creada')}</span><span>${t.createdAt}</span></div></div>
     </div>`;
   bindDetail(t);
 }
@@ -1484,9 +1485,9 @@ function openRespPicker(t){
   const sel=respList(t);
   const ppl=allPeople();
   const pop=document.createElement('div');pop.id='respPop';pop.className='resp-pop';
-  pop.innerHTML=`<div class="resp-pop-h">${t('Asignar responsables')}</div>
+  pop.innerHTML=`<div class="resp-pop-h">${T('Asignar responsables')}</div>
     <div class="resp-pop-list">${ppl.map(n=>`<label class="resp-opt"><input type="checkbox" value="${escapeAttr(n)}" ${sel.includes(n)?'checked':''}><span class="av" style="background:${colorFor(n)}">${initials(n)}</span><span>${n==='Yo'?'Yo ('+escapeH(myName())+')':escapeH(n)}</span></label>`).join('')}</div>
-    <div class="resp-pop-f"><button type="button" id="respNew">➕ Nueva persona</button><button type="button" id="respDone" class="btn-primary">${t('Listo')}</button></div>`;
+    <div class="resp-pop-f"><button type="button" id="respNew">➕ Nueva persona</button><button type="button" id="respDone" class="btn-primary">${T('Listo')}</button></div>`;
   document.body.appendChild(pop);
   const btn=document.getElementById('respBtn');const r=btn.getBoundingClientRect();
   pop.style.top=(r.bottom+6+window.scrollY)+'px';pop.style.left=Math.min(r.left,window.innerWidth-300)+'px';
