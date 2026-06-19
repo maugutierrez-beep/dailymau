@@ -687,7 +687,9 @@ function openProfile(){
         <input type="file" id="profFile" accept="image/*" style="display:none">
       </div>
       <div class="field"><label>${T('Tu nombre')}</label><input id="profName" value="${escapeAttr(PROFILE.name||'')}" placeholder="Ej: ${escapeAttr(getUserEmail().split('@')[0])}" maxlength="40"></div>
-      <div style="font-size:12px;color:var(--ink-3);margin-top:6px">${T('Así te verán en tus tareas y mensajes.')}</div>
+      <div style="font-size:12px;color:var(--ink-3);margin-top:6px;margin-bottom:14px">${T('Así te verán en tus tareas y mensajes.')}</div>
+      <div class="field"><label>${T('Idioma')}</label><div class="lang-toggle"><button type="button" class="lang-opt ${LANG==='en'?'active':''}" data-lang="en">English</button><button type="button" class="lang-opt ${LANG==='es'?'active':''}" data-lang="es">Español</button></div></div>
+      
       ${!isStandalone()?`<div class="prof-install" id="profInstall"><div><div style="font-weight:600;font-size:13.5px;color:var(--ink)">📱 Instalar en tu celular</div><div style="font-size:12px;color:var(--ink-3);margin-top:2px">Tenla como app, con ícono propio y a pantalla completa.</div></div><button class="btn-ghost" id="profInstallBtn" style="white-space:nowrap">Ver cómo</button></div>`:''}
     </div>
     <div class="modal-f"><div></div><div style="display:flex;gap:8px"><button class="btn-ghost" id="profCancel">${T('Cancelar')}</button><button class="btn-primary" id="profSave">${T('Guardar')}</button></div></div>
