@@ -503,8 +503,8 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
     <h1 class="login-title">jazz<span>doit</span></h1>
     <p class="login-sub">Get it done!</p>
     <div id="loginError" class="login-error"></div>
-    <input id="loginEmail" type="email" placeholder="<span data-i18n="Correo electrónico">Correo electrónico</span>" autocomplete="email">
-    <input id="loginPass" type="password" placeholder="<span data-i18n="Contraseña">Contraseña</span>" autocomplete="current-password">
+    <input id="loginEmail" type="email" placeholder="Correo electrónico" data-i18n-ph="Correo electrónico" autocomplete="email">
+    <input id="loginPass" type="password" placeholder="Contraseña" data-i18n-ph="Contraseña" autocomplete="current-password">
     <button id="loginBtn" class="login-primary"><span data-i18n="Iniciar sesión">Iniciar sesión</span></button>
     <button id="signupBtn" class="login-link"><span data-i18n="Crear cuenta">Crear cuenta</span></button>
     <div class="login-div"><span>o</span></div>
@@ -525,11 +525,11 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
     <div class="quick-add"><button id="addBtn" class="add-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="Agregar tarea">Agregar tarea</span></button></div>
     <nav class="nav" id="nav"></nav>
     <div class="sidebar-foot">
-      <button class="profile-btn" id="profileBtn" title="<span data-i18n="Mi perfil">Mi perfil</span>"><span class="av-sm" id="profileAv"></span></button>
+      <button class="profile-btn" id="profileBtn" title="Mi perfil" data-i18n-title="Mi perfil"><span class="av-sm" id="profileAv"></span></button>
       <div class="cloud-pill" id="cloud"><span class="cloud-dot"></span><span data-i18n="Solo local">Solo local</span></div>
-      <button class="icon-btn" id="themeBtn" title="<span data-i18n="Tema claro/oscuro">Tema claro/oscuro</span>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
-      <button class="icon-btn" id="logoutBtn" title="<span data-i18n="Cerrar sesión">Cerrar sesión</span>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
-      <button class="icon-btn" id="exportBtn" title="<span data-i18n="Descargar respaldo (JSON)">Descargar respaldo (JSON)</span>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+      <button class="icon-btn" id="themeBtn" title="Tema claro/oscuro" data-i18n-title="Tema claro/oscuro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+      <button class="icon-btn" id="logoutBtn" title="Cerrar sesión" data-i18n-title="Cerrar sesión"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+      <button class="icon-btn" id="exportBtn" title="Descargar respaldo (JSON)" data-i18n-title="Descargar respaldo (JSON)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
     </div>
     <div class="gvc-credit">
       <img class="gvc-logo gvc-logo-light" src="gvc-navy.png" alt="GVC Capital">
@@ -545,7 +545,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
         <button class="icon-btn menu-btn" id="menuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
         <div><div class="eyebrow" id="eyebrow"><span data-i18n="Hoy">Hoy</span></div><h1 id="viewTitle"><span data-i18n="Hoy">Hoy</span></h1><div class="sub" id="viewSub"></div></div>
       </div>
-      <div class="search-wrap"><input id="search" placeholder="<span data-i18n="Buscar…">Buscar…</span>" autocomplete="off"></div>
+      <div class="search-wrap"><input id="search" placeholder="Buscar…" data-i18n-ph="Buscar…" autocomplete="off"></div>
     </div>
     <div class="filters" id="filters"></div>
     <div class="scroll" id="scroll"></div>
@@ -557,7 +557,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 <div class="overlay" id="overlay">
   <div class="modal">
     <div class="modal-h">
-      <input id="mTitle" placeholder="<span data-i18n="¿Qué hay que hacer?">¿Qué hay que hacer?</span>">
+      <input id="mTitle" placeholder="¿Qué hay que hacer?" data-i18n-ph="¿Qué hay que hacer?">
     </div>
     <div class="modal-b">
       <div class="modal-row">
@@ -565,8 +565,8 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
         <div class="mfield"><label><span data-i18n="Responsable">Responsable</span></label><select id="mResp"></select></div>
       </div>
       <div class="mfield" style="margin-bottom:10px"><label><span data-i18n="Para el día">Para el día</span></label><input type="date" id="mDue"></div>
-      <div class="mfield" style="margin-bottom:10px"><label><span data-i18n="Próxima acción concreta">Próxima acción concreta</span></label><input id="mNext" placeholder="<span data-i18n="El siguiente paso físico…">El siguiente paso físico…</span>"></div>
-      <textarea id="mDesc" placeholder="<span data-i18n="Descripción (opcional)">Descripción (opcional)</span>"></textarea>
+      <div class="mfield" style="margin-bottom:10px"><label><span data-i18n="Próxima acción concreta">Próxima acción concreta</span></label><input id="mNext" placeholder="El siguiente paso físico…" data-i18n-ph="El siguiente paso físico…"></div>
+      <textarea id="mDesc" placeholder="Descripción (opcional)" data-i18n-ph="Descripción (opcional)"></textarea>
       <datalist id="peopleList"></datalist>
     </div>
     <div class="modal-f">
