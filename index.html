@@ -627,8 +627,9 @@ function setCloud(s){const el=document.getElementById('cloud');if(!el)return;
   const d=map[s]||['',''];el.innerHTML=`<span class="cloud-dot ${d[0]}"></span>${d[1]}${s==='saved'?' · '+new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):''}`}
 function scheduleCloud(){if(!cloudReady)return;clearTimeout(saveT);setCloud('saving');saveT=setTimeout(cloudSave,250);
   clearTimeout(backupT);backupT=setTimeout(()=>{cloudSave()},2500)}
-async function cloudFetchRow(row){
-  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${row}&select=data`,{headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key}});
+async function cloudFetchRow(row,_retried){
+  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?id=eq.${row}&select=data`,{headers:hGet()});
+    if(r.status===401&&!_retried){if(await refreshToken())return cloudFetchRow(row,true);return undefined}
     if(!r.ok)return undefined;const j=await r.json();
     if(!j||!j[0]||!j[0].data)return null;
     return typeof j[0].data==='string'?JSON.parse(j[0].data):j[0].data;
@@ -650,14 +651,15 @@ async function cloudLoad(){
 }
 async function cloudSave(retry){if(!cloudReady)return;if(cloudBusy){clearTimeout(saveT);saveT=setTimeout(cloudSave,300);return}cloudBusy=true;setCloud('saving');
   const payload=JSON.stringify({id:CLOUD.row,data:serialize(),updated_at:new Date().toISOString()});
-  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}`,{method:'POST',headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},body:payload});
+  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}`,{method:'POST',headers:{...hPost(),Prefer:'resolution=merge-duplicates,return=minimal'},body:payload});
     cloudBusy=false;
+    if(r.status===401&&!retry){if(await refreshToken())return cloudSave(true);setCloud('error');return}
     if(r.ok){setCloud('saved')}
     else{if(!retry){cloudBusy=false;return cloudSave(true)}setCloud('error')}
   }catch(e){cloudBusy=false;if(!retry){await new Promise(r=>setTimeout(r,800));return cloudSave(true)}setCloud('error')}}
 function flushSave(){if(!cloudReady)return;clearTimeout(saveT);
   try{fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}`,{method:'POST',
-    headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'},
+    headers:{...hPost(),Prefer:'resolution=merge-duplicates,return=minimal'},
     body:JSON.stringify({id:CLOUD.row,data:serialize(),updated_at:new Date().toISOString()}),keepalive:true}).catch(()=>{})}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushSave()});
 window.addEventListener('pagehide',flushSave);
@@ -670,13 +672,6 @@ async function cloudInit(){
   if(res===false){cloudReady=TASKS.length>0;setCloud(TASKS.length>0?'saved':'error');return}
   // res===null → fila del usuario vacía (primera vez en esta cuenta)
   cloudReady=true;
-  // Intento de migración: si es el dueño original, traer datos de 'main'
-  const email=getUserEmail().toLowerCase();
-  const isOwner=email==='maugutierrez@gmail.com';
-  if(isOwner && !TASKS.length){
-    const legacy=await cloudFetchRow('main');
-    if(legacy && applyCloudData(legacy)){rollover();render();await cloudSave();setCloud('saved');return}
-  }
   if(TASKS.length){await cloudSave();setCloud('saved');return}
   // Usuario nuevo de verdad → selector de plantilla + onboarding
   seedOnboarding();rollover();render();await cloudSave();setCloud('saved');
@@ -1252,7 +1247,8 @@ function moveDay(id,delta){const t=TASKS.find(x=>x.id===id);if(!t)return;
 async function loadAdmin(){
   if(getUserEmail().toLowerCase()!=='maugutierrez@gmail.com'){document.getElementById('scroll').innerHTML=emptyState('Acceso restringido','Esta sección es solo para el administrador.');return}
   let rows=[];
-  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?select=id,data,updated_at`,{headers:{apikey:CLOUD.key,Authorization:'Bearer '+CLOUD.key}});
+  try{const r=await fetch(`${CLOUD.url}/rest/v1/${CLOUD.table}?select=id,data,updated_at`,{headers:hGet()});
+    if(r.status===401){if(await refreshToken()){return loadAdmin()}}
     rows=await r.json();}catch(e){document.getElementById('scroll').innerHTML=emptyState('Error','No se pudieron cargar los datos.');return}
   // Solo filas de usuario (u_*)
   const users=rows.filter(r=>String(r.id).startsWith('u_')).map(r=>{
