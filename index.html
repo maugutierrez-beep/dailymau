@@ -641,6 +641,16 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .streak-label{font-size:13px;color:rgba(255,255,255,.5);margin-top:2px}
 .streak-best{font-size:12px;color:rgba(255,255,255,.35);margin-top:4px}
 
+
+/* ── PASSWORD RESET ── */
+.forgot-link{display:block;text-align:center;margin-top:8px;font-size:13px;color:var(--ink-3);cursor:pointer;background:none;border:none;font-family:var(--font-b);text-decoration:underline;text-underline-offset:2px;transition:color .15s}
+.forgot-link:hover{color:var(--accent)}
+.reset-success{display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px 0;text-align:center}
+.reset-success-ico{font-size:48px}
+.reset-success-title{font-family:var(--font-h,var(--font-d));font-size:18px;font-weight:700;color:var(--ink)}
+.reset-success-desc{font-size:14px;color:var(--ink-2);max-width:280px;line-height:1.6}
+.reset-back{font-size:13px;color:var(--accent);cursor:pointer;background:none;border:none;font-family:var(--font-b);margin-top:4px}
+
 </style>
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-CWV8G7JGPC"></script>
@@ -671,6 +681,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
     <input id="loginPass" type="password" placeholder="Contraseña" data-i18n-ph="Contraseña" autocomplete="current-password">
     <button id="loginBtn" class="login-primary"><span data-i18n="Iniciar sesión">Iniciar sesión</span></button>
     <button id="signupBtn" class="login-link"><span data-i18n="Crear cuenta">Crear cuenta</span></button>
+    <button class="forgot-link" id="forgotBtn" data-i18n="¿Olvidaste tu contraseña?">¿Olvidaste tu contraseña?</button>
     <div class="login-div"><span>o</span></div>
     <button id="googleBtn" class="login-google"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg> <span data-i18n="Continuar con Google">Continuar con Google</span></button>
     <div class="gvc-credit gvc-credit-login">
@@ -1337,12 +1348,192 @@ function renderProgress(){
   return h;
 }
 
+
+// ════════════════════════════════════════════
+// PASSWORD RESET
+// ════════════════════════════════════════════
+
+async function sendPasswordReset(email){
+  const r = await fetch(CLOUD.url+'/auth/v1/recover', {
+    method: 'POST',
+    headers: { apikey: CLOUD.key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email,
+      redirectTo: 'https://app.jazzdoit.co'
+    })
+  });
+  if(!r.ok){ const d=await r.json(); throw d.error_description||d.msg||'Error sending reset email'; }
+  return true;
+}
+
+async function updatePassword(newPass){
+  if(!SESSION || !SESSION.access_token) throw 'No active session';
+  const r = await fetch(CLOUD.url+'/auth/v1/user', {
+    method: 'PUT',
+    headers: {
+      apikey: CLOUD.key,
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + SESSION.access_token
+    },
+    body: JSON.stringify({ password: newPass })
+  });
+  if(!r.ok){ const d=await r.json(); throw d.error_description||d.msg||'Error updating password'; }
+  return true;
+}
+
+function openForgotModal(){
+  const L = LANG==='en';
+  const m = document.createElement('div');
+  m.className = 'modal-overlay'; m.id = 'forgotModal';
+  m.innerHTML = `<div class="modal" style="max-width:360px">
+    <div class="modal-header">
+      <h3>${L?'Reset password':'Recuperar contraseña'}</h3>
+      <button class="modal-close" onclick="document.getElementById('forgotModal').remove()">${svg(I.x,16)}</button>
+    </div>
+    <div class="modal-body" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <p style="font-size:14px;color:var(--ink-2);line-height:1.6">
+        ${L?'Enter your email address and we will send you a link to reset your password.':'Ingresa tu correo y te enviaremos un link para restablecer tu contraseña.'}
+      </p>
+      <input id="resetEmailInput" type="email" placeholder="${L?'Email address':'Correo electrónico'}"
+        style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:var(--bg);color:var(--ink);font-family:var(--font-b)"
+        autocomplete="email">
+      <div id="resetError" style="font-size:13px;color:#e74c3c;display:none"></div>
+      <button id="resetSendBtn" onclick="handleSendReset()" style="background:var(--accent);color:#fff;border:none;border-radius:9px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-b)">
+        ${L?'Send reset link':'Enviar link de recuperación'}
+      </button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('resetEmailInput')?.focus(), 100);
+  document.getElementById('resetEmailInput')?.addEventListener('keydown', e=>{
+    if(e.key==='Enter') handleSendReset();
+  });
+}
+
+async function handleSendReset(){
+  const L = LANG==='en';
+  const input = document.getElementById('resetEmailInput');
+  const errEl = document.getElementById('resetError');
+  const btn = document.getElementById('resetSendBtn');
+  if(!input) return;
+  const email = input.value.trim();
+  if(!email){ 
+    if(errEl){errEl.style.display='block';errEl.textContent=L?'Please enter your email':'Ingresa tu correo';}
+    return; 
+  }
+  btn.textContent = L?'Sending...':'Enviando...';
+  btn.disabled = true;
+  if(errEl) errEl.style.display='none';
+  try {
+    await sendPasswordReset(email);
+    // Mostrar éxito
+    const modal = document.getElementById('forgotModal');
+    if(modal){
+      const body = modal.querySelector('.modal-body');
+      if(body) body.innerHTML = `<div class="reset-success">
+        <div class="reset-success-ico">📧</div>
+        <div class="reset-success-title">${L?'Email sent!':'¡Correo enviado!'}</div>
+        <div class="reset-success-desc">${L
+          ?'Check your inbox for a password reset link. It may take a minute to arrive.'
+          :'Revisa tu bandeja de entrada. El link puede tardar un minuto en llegar.'
+        }</div>
+        <button class="reset-back" onclick="document.getElementById('forgotModal').remove()">
+          ${L?'Back to sign in':'Volver al inicio de sesión'}
+        </button>
+      </div>`;
+    }
+    gaEvent('password_reset_requested');
+  } catch(e){
+    btn.textContent = L?'Send reset link':'Enviar link de recuperación';
+    btn.disabled = false;
+    if(errEl){ errEl.style.display='block'; errEl.textContent = String(e); }
+  }
+}
+
+function showNewPasswordForm(){
+  const L = LANG==='en';
+  // Ocultar pantalla de login, mostrar form de nueva contraseña
+  document.getElementById('loginScreen')?.classList.add('hidden');
+  const wrap = document.createElement('div');
+  wrap.id = 'newPassScreen';
+  wrap.className = 'login-screen';
+  wrap.innerHTML = `<div class="login-card">
+    <svg class="login-logo" width="56" height="56" viewBox="0 0 120 120">
+      <rect width="120" height="120" rx="28" fill="#16243B"/>
+      <path d="M38 60 L52 74" fill="none" stroke="#E8794B" stroke-width="9" stroke-linecap="round"/>
+      <path d="M52 74 L82 42" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+    </svg>
+    <h1 class="login-title">jazz<span>doit</span></h1>
+    <p class="login-sub">${L?'Set new password':'Nueva contraseña'}</p>
+    <div id="newPassError" class="login-error"></div>
+    <input id="newPassInput" type="password" placeholder="${L?'New password (min 6 chars)':'Nueva contraseña (mín 6 caracteres)'}"
+      autocomplete="new-password" style="margin-bottom:8px">
+    <input id="newPassConfirm" type="password" placeholder="${L?'Confirm new password':'Confirma la nueva contraseña'}"
+      autocomplete="new-password">
+    <button id="newPassBtn" onclick="handleNewPassword()" class="login-primary" style="margin-top:12px">
+      <span>${L?'Set new password':'Guardar nueva contraseña'}</span>
+    </button>
+  </div>`;
+  document.body.appendChild(wrap);
+  setTimeout(()=>document.getElementById('newPassInput')?.focus(), 100);
+}
+
+async function handleNewPassword(){
+  const L = LANG==='en';
+  const pass = document.getElementById('newPassInput')?.value;
+  const confirm = document.getElementById('newPassConfirm')?.value;
+  const errEl = document.getElementById('newPassError');
+  const btn = document.getElementById('newPassBtn');
+
+  if(!pass || pass.length < 6){
+    if(errEl) errEl.textContent = L?'Password must be at least 6 characters':'Mínimo 6 caracteres';
+    return;
+  }
+  if(pass !== confirm){
+    if(errEl) errEl.textContent = L?'Passwords do not match':'Las contraseñas no coinciden';
+    return;
+  }
+  if(btn){ btn.textContent = L?'Saving...':'Guardando...'; btn.disabled = true; }
+  if(errEl) errEl.textContent = '';
+
+  try {
+    await updatePassword(pass);
+    document.getElementById('newPassScreen')?.remove();
+    toast(L?'✓ Password updated! Please sign in.':'✓ Contraseña actualizada. Inicia sesión.');
+    showLogin();
+    gaEvent('password_reset_completed');
+  } catch(e){
+    if(errEl) errEl.textContent = String(e);
+    if(btn){ btn.textContent = L?'Set new password':'Guardar nueva contraseña'; btn.disabled = false; }
+  }
+}
+
+// Detectar token de reset en la URL (#access_token=... o ?type=recovery)
+function checkResetToken(){
+  try{
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.replace('#','?'));
+    const type = params.get('type') || new URLSearchParams(window.location.search).get('type');
+    const token = params.get('access_token');
+    
+    if(type === 'recovery' && token){
+      // Crear sesión temporal con el token para poder hacer updateUser
+      SESSION = { access_token: token };
+      showNewPasswordForm();
+      // Limpiar la URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
 // ── GA4 eventos desde la app ──
 function gaEvent(name, params){
   try{if(typeof gtag==='function')gtag('event',name,params||{});}catch(e){}
 }
 
-const I18N_EN = {"Get it done": "Get it done", "Iniciar sesión": "Sign in", "Crear cuenta": "Create account", "Continuar con Google": "Continue with Google", "Correo electrónico": "Email", "Contraseña": "Password", "Hoy": "Today", "Mi día": "My day", "Realizadas": "Completed", "Todas": "All", "Personas": "People", "Mensajes": "Messages", "Seguimientos": "Follow-ups", "Revisión diaria": "Daily review", "Calendario": "Calendar", "Inbox": "Inbox", "Admin": "Admin", "Vistas": "Views", "Proyectos": "Projects", "Más": "More", "Nuevo proyecto": "New project", "Nueva persona": "New person", "Agregar tarea": "Add task", "Solo local": "Local only", "Sincronizado": "Synced", "Guardando…": "Saving…", "Error al guardar": "Save error", "Sin conexión": "Offline", "Cancelar": "Cancel", "Guardar": "Save", "Cerrar": "Close", "Copiar": "Copy", "Imprimir": "Print", "Añadir": "Add", "Quitar": "Remove", "Listo": "Done", "Eliminar": "Delete", "Duplicar": "Duplicate", "Editar": "Edit", "Deshacer": "Undo", "Guardar borrador": "Save draft", "Regenerar": "Regenerate", "Proyecto": "Project", "Responsable": "Assignee", "Responsables": "Assignees", "Estado": "Status", "Para el día": "Due date", "Próxima acción": "Next action", "Próxima acción concreta": "Concrete next action", "Próx. seguimiento": "Next follow-up", "Persona relacionada": "Related person", "Canal": "Channel", "Enlaces / archivos": "Links / files", "Notas": "Notes", "Historial": "History", "Subtareas": "Subtasks", "Repetir": "Repeat", "Recordar por correo": "Email reminder", "Tipo": "Type", "Día": "Day", "Enlace": "Link", "Recordatorio": "Reminder", "No repetir": "Don't repeat", "Cada día": "Every day", "Cada semana": "Every week", "Cada 2 semanas": "Every 2 weeks", "Cada mes": "Every month", "Sin recordatorio": "No reminder", "El día de la tarea": "On the due date", "1 día antes": "1 day before", "2 días antes": "2 days before", "Buscar…": "Search…", "Agregar nota…": "Add note…", "Agregar subtarea…": "Add subtask…", "Añade una descripción…": "Add a description…", "Descripción (opcional)": "Description (optional)", "El siguiente paso físico…": "The next physical step…", "URL o referencia": "URL or reference", "¿Cuál es el siguiente paso concreto?": "What's the concrete next step?", "¿Qué hay que hacer?": "What needs to be done?", "Tu nombre": "Your name", "Marcar prioridad": "Set priority", "Quitar prioridad": "Remove priority", "Algún día": "Someday", "Asignar a persona": "Assign to person", "Cerrar sesión": "Sign out", "Descargar respaldo (JSON)": "Download backup (JSON)", "Día anterior": "Previous day", "Día siguiente": "Next day", "Esperando respuesta": "Waiting for reply", "Mañana": "Tomorrow", "Mi perfil": "My profile", "Nota rápida": "Quick note", "Pasar a mañana": "Move to tomorrow", "Recordatorio por correo": "Email reminder", "Reprogramar": "Reschedule", "Se repite": "Repeats", "Tema claro/oscuro": "Light/dark theme", "Agrega tareas o trae las de mañana.": "Add tasks or pull tomorrow's.", "Asignar responsables": "Assign people", "Así te verán en tus tareas y mensajes.": "This is how you'll appear in your tasks and messages.", "Aún nada marcado.": "Nothing checked yet.", "Cargando métricas…": "Loading metrics…", "Día libre": "Free day", "Empezar desde cero": "Start from scratch", "Este proyecto no tiene tareas activas.": "This project has no active tasks.", "Mensaje de seguimiento": "Follow-up message", "Más adelante": "Later", "Nada pendiente.": "Nothing pending.", "Nada urgente.": "Nothing urgent.", "Subir foto": "Upload photo", "Creada": "Created", "Correo": "Email", "Compartir": "Share", "Hechas": "Done", "Nada se quedó atrás. 👏": "Nothing left behind. 👏", "Sin notas aún.": "No notes yet.", "Asigna responsables a tus tareas para verlas aquí.": "Assign people to your tasks to see them here.", "Marca tareas como realizadas (o arrástralas a Realizadas) y aparecerán aquí con su fecha.": "Mark tasks as done (or drag them to Completed) and they'll appear here with their date.", "Nada coincide con tu búsqueda.": "Nothing matches your search.", "Aún no hay usuarios": "No users yet", "Cuando alguien cree una cuenta aparecerá aquí.": "When someone creates an account it'll appear here.", "Esta sección es solo para el administrador.": "This section is for the administrator only.", "Error de autenticación": "Authentication error", "Sin conexión · local": "Offline · local", "Usuarios y métricas de uso": "Users and usage metrics", "Activos 7 días": "Active 7 days", "Activos hoy": "Active today", "Usuarios totales": "Total users", "Nuevos 7 días": "New 7 days", "Tareas creadas": "Tasks created", "Completadas": "Completed", "Promedio tareas": "Avg tasks", "Retención 7d": "7d retention", "Usuarios registrados": "Registered users", "Registro": "Signup", "Última actividad": "Last active", "Tareas": "Tasks", "Inicio y cierre del día": "Start and end of day", "Enfoque para hoy": "Today's focus", "Top 3 del día": "Top 3 of the day", "Idioma": "Language", "Tema: automático": "Theme: automatic", "Tema: claro": "Theme: light", "Tema: oscuro": "Theme: dark", "Prepara y guarda mensajes para cada persona. El borrador toma sus tareas pendientes como base; edítalo a tu gusto y guárdalo para enviarlo cuando quieras.": "Prepare and save messages for each person. The draft uses their pending tasks as a base; edit it as you like and save it to send whenever you want.", "borrador guardado": "draft saved", "Captura rápida sin clasificar": "Quick capture, unsorted", "Captura rápida": "Quick capture", "Tócala una vez para instalarla y tenerla como app, con su ícono y a pantalla completa.": "Tap once to install it as an app, with its own icon and full screen.", "Busca el ícono de instalar ": "Find the install icon ", "Básico": "Basic", "Pendientes rápidos": "Quick to-dos", "Decisión": "Decision", "Ingresa correo y contraseña": "Enter email and password", "Mínimo 6 caracteres en la contraseña": "Password must be at least 6 characters", "Arrastrada al día de hoy": "Moved to today", "Pasada a mañana": "Moved to tomorrow", "Todo lo tuyo quedó cerrado.": "Everything of yours is wrapped up.", "¿Regenerar desde las tareas pendientes? Se perderán tus ediciones.": "Regenerate from pending tasks? Your edits will be lost.", "👋 ¡Bienvenido! Marca esta tarea como hecha y mira el confeti": "👋 Welcome! Mark this task as done and watch the confetti", "miércoles": "Wednesday", "sábado": "Saturday", "Trabajo, Personal y pendientes rápidos": "Work, Personal and quick to-dos", "Eliminar datos de este usuario": "Delete this user's data", "Eliminar datos de usuario": "Delete user data", "Vas a borrar TODOS los datos de": "You're about to delete ALL data for", "tareas": "tasks", "Esta acción no se puede deshacer.": "This action cannot be undone.", "Para confirmar, escribe el correo exacto:": "To confirm, type the exact email:", "Eliminar definitivamente": "Delete permanently", "Eliminando…": "Deleting…", "Usuario eliminado": "User deleted", "Error al eliminar": "Error deleting", "Proyecto eliminado": "Project deleted", "Persona eliminada": "Person removed", "Notificaciones push": "Push notifications", "Tarea no encontrada": "Task not found", "Mi progreso": "My progress", "Buenos días": "Good morning", "Buenas tardes": "Good afternoon", "Buenas noches": "Good evening"};
+const I18N_EN = {"Get it done": "Get it done", "Iniciar sesión": "Sign in", "Crear cuenta": "Create account", "Continuar con Google": "Continue with Google", "Correo electrónico": "Email", "Contraseña": "Password", "Hoy": "Today", "Mi día": "My day", "Realizadas": "Completed", "Todas": "All", "Personas": "People", "Mensajes": "Messages", "Seguimientos": "Follow-ups", "Revisión diaria": "Daily review", "Calendario": "Calendar", "Inbox": "Inbox", "Admin": "Admin", "Vistas": "Views", "Proyectos": "Projects", "Más": "More", "Nuevo proyecto": "New project", "Nueva persona": "New person", "Agregar tarea": "Add task", "Solo local": "Local only", "Sincronizado": "Synced", "Guardando…": "Saving…", "Error al guardar": "Save error", "Sin conexión": "Offline", "Cancelar": "Cancel", "Guardar": "Save", "Cerrar": "Close", "Copiar": "Copy", "Imprimir": "Print", "Añadir": "Add", "Quitar": "Remove", "Listo": "Done", "Eliminar": "Delete", "Duplicar": "Duplicate", "Editar": "Edit", "Deshacer": "Undo", "Guardar borrador": "Save draft", "Regenerar": "Regenerate", "Proyecto": "Project", "Responsable": "Assignee", "Responsables": "Assignees", "Estado": "Status", "Para el día": "Due date", "Próxima acción": "Next action", "Próxima acción concreta": "Concrete next action", "Próx. seguimiento": "Next follow-up", "Persona relacionada": "Related person", "Canal": "Channel", "Enlaces / archivos": "Links / files", "Notas": "Notes", "Historial": "History", "Subtareas": "Subtasks", "Repetir": "Repeat", "Recordar por correo": "Email reminder", "Tipo": "Type", "Día": "Day", "Enlace": "Link", "Recordatorio": "Reminder", "No repetir": "Don't repeat", "Cada día": "Every day", "Cada semana": "Every week", "Cada 2 semanas": "Every 2 weeks", "Cada mes": "Every month", "Sin recordatorio": "No reminder", "El día de la tarea": "On the due date", "1 día antes": "1 day before", "2 días antes": "2 days before", "Buscar…": "Search…", "Agregar nota…": "Add note…", "Agregar subtarea…": "Add subtask…", "Añade una descripción…": "Add a description…", "Descripción (opcional)": "Description (optional)", "El siguiente paso físico…": "The next physical step…", "URL o referencia": "URL or reference", "¿Cuál es el siguiente paso concreto?": "What's the concrete next step?", "¿Qué hay que hacer?": "What needs to be done?", "Tu nombre": "Your name", "Marcar prioridad": "Set priority", "Quitar prioridad": "Remove priority", "Algún día": "Someday", "Asignar a persona": "Assign to person", "Cerrar sesión": "Sign out", "Descargar respaldo (JSON)": "Download backup (JSON)", "Día anterior": "Previous day", "Día siguiente": "Next day", "Esperando respuesta": "Waiting for reply", "Mañana": "Tomorrow", "Mi perfil": "My profile", "Nota rápida": "Quick note", "Pasar a mañana": "Move to tomorrow", "Recordatorio por correo": "Email reminder", "Reprogramar": "Reschedule", "Se repite": "Repeats", "Tema claro/oscuro": "Light/dark theme", "Agrega tareas o trae las de mañana.": "Add tasks or pull tomorrow's.", "Asignar responsables": "Assign people", "Así te verán en tus tareas y mensajes.": "This is how you'll appear in your tasks and messages.", "Aún nada marcado.": "Nothing checked yet.", "Cargando métricas…": "Loading metrics…", "Día libre": "Free day", "Empezar desde cero": "Start from scratch", "Este proyecto no tiene tareas activas.": "This project has no active tasks.", "Mensaje de seguimiento": "Follow-up message", "Más adelante": "Later", "Nada pendiente.": "Nothing pending.", "Nada urgente.": "Nothing urgent.", "Subir foto": "Upload photo", "Creada": "Created", "Correo": "Email", "Compartir": "Share", "Hechas": "Done", "Nada se quedó atrás. 👏": "Nothing left behind. 👏", "Sin notas aún.": "No notes yet.", "Asigna responsables a tus tareas para verlas aquí.": "Assign people to your tasks to see them here.", "Marca tareas como realizadas (o arrástralas a Realizadas) y aparecerán aquí con su fecha.": "Mark tasks as done (or drag them to Completed) and they'll appear here with their date.", "Nada coincide con tu búsqueda.": "Nothing matches your search.", "Aún no hay usuarios": "No users yet", "Cuando alguien cree una cuenta aparecerá aquí.": "When someone creates an account it'll appear here.", "Esta sección es solo para el administrador.": "This section is for the administrator only.", "Error de autenticación": "Authentication error", "Sin conexión · local": "Offline · local", "Usuarios y métricas de uso": "Users and usage metrics", "Activos 7 días": "Active 7 days", "Activos hoy": "Active today", "Usuarios totales": "Total users", "Nuevos 7 días": "New 7 days", "Tareas creadas": "Tasks created", "Completadas": "Completed", "Promedio tareas": "Avg tasks", "Retención 7d": "7d retention", "Usuarios registrados": "Registered users", "Registro": "Signup", "Última actividad": "Last active", "Tareas": "Tasks", "Inicio y cierre del día": "Start and end of day", "Enfoque para hoy": "Today's focus", "Top 3 del día": "Top 3 of the day", "Idioma": "Language", "Tema: automático": "Theme: automatic", "Tema: claro": "Theme: light", "Tema: oscuro": "Theme: dark", "Prepara y guarda mensajes para cada persona. El borrador toma sus tareas pendientes como base; edítalo a tu gusto y guárdalo para enviarlo cuando quieras.": "Prepare and save messages for each person. The draft uses their pending tasks as a base; edit it as you like and save it to send whenever you want.", "borrador guardado": "draft saved", "Captura rápida sin clasificar": "Quick capture, unsorted", "Captura rápida": "Quick capture", "Tócala una vez para instalarla y tenerla como app, con su ícono y a pantalla completa.": "Tap once to install it as an app, with its own icon and full screen.", "Busca el ícono de instalar ": "Find the install icon ", "Básico": "Basic", "Pendientes rápidos": "Quick to-dos", "Decisión": "Decision", "Ingresa correo y contraseña": "Enter email and password", "Mínimo 6 caracteres en la contraseña": "Password must be at least 6 characters", "Arrastrada al día de hoy": "Moved to today", "Pasada a mañana": "Moved to tomorrow", "Todo lo tuyo quedó cerrado.": "Everything of yours is wrapped up.", "¿Regenerar desde las tareas pendientes? Se perderán tus ediciones.": "Regenerate from pending tasks? Your edits will be lost.", "👋 ¡Bienvenido! Marca esta tarea como hecha y mira el confeti": "👋 Welcome! Mark this task as done and watch the confetti", "miércoles": "Wednesday", "sábado": "Saturday", "Trabajo, Personal y pendientes rápidos": "Work, Personal and quick to-dos", "Eliminar datos de este usuario": "Delete this user's data", "Eliminar datos de usuario": "Delete user data", "Vas a borrar TODOS los datos de": "You're about to delete ALL data for", "tareas": "tasks", "Esta acción no se puede deshacer.": "This action cannot be undone.", "Para confirmar, escribe el correo exacto:": "To confirm, type the exact email:", "Eliminar definitivamente": "Delete permanently", "Eliminando…": "Deleting…", "Usuario eliminado": "User deleted", "Error al eliminar": "Error deleting", "Proyecto eliminado": "Project deleted", "Persona eliminada": "Person removed", "Notificaciones push": "Push notifications", "Tarea no encontrada": "Task not found", "Mi progreso": "My progress", "Buenos días": "Good morning", "Buenas tardes": "Good afternoon", "Buenas noches": "Good evening", "¿Olvidaste tu contraseña?": "Forgot your password?"};
 function detectLang(){try{const s=localStorage.getItem('jd_lang');if(s)return s;}catch(e){}const n=(navigator.language||'en').toLowerCase();return n.startsWith('es')?'es':'en';}
 let LANG=detectLang();try{document.documentElement.lang=LANG;}catch(e){}
 function t(s){if(LANG==='en'&&I18N_EN[s])return I18N_EN[s];return s;}
@@ -2744,6 +2935,7 @@ document.getElementById('addBtn').onclick=()=>openModal();
 document.getElementById('logoutBtn').onclick=signOut;
 const _pb=document.getElementById('profileBtn');if(_pb)_pb.onclick=openProfile;
 document.getElementById('loginBtn').onclick=handleLogin;
+  document.getElementById('forgotBtn').onclick=openForgotModal;
 document.getElementById('signupBtn').onclick=handleSignup;
 document.getElementById('googleBtn').onclick=signInGoogle;
 document.getElementById('loginPass').onkeydown=(e)=>{if(e.key==='Enter')handleLogin()};
@@ -2790,7 +2982,7 @@ document.addEventListener('keydown',(e)=>{if(e.target.matches('input,textarea,se
 initTheme();loadSession();
 if(checkOAuthCallback()){startApp()}
 else if(SESSION&&SESSION.access_token){startApp()}
-else{showLogin()}
+else{if(!checkResetToken())showLogin()}
 
 // === PWA: registrar service worker ===
 if('serviceWorker' in navigator){
