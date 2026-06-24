@@ -771,6 +771,37 @@ function openProfile(){
 function updateProfileAvatar(){const el=document.getElementById('profileAv');if(!el)return;const photo=myPhoto();if(photo){el.style.backgroundImage=`url('${photo}')`;el.textContent=''}else{el.style.backgroundImage='';el.textContent=myInitials()}}
 
 async function signOut(){flushSave();if(SESSION&&SESSION.access_token){try{await fetch(CLOUD.url+'/auth/v1/logout',{method:'POST',headers:hGet()})}catch(e){}}clearSession();TASKS=[];PROJECTS=defaultProjects();PEOPLE=[];DRAFTS={};cloudReady=false;CLOUD.row='main';showLogin()}
+
+function setLoginMode(mode){
+  const loginBtn=document.getElementById('loginBtn');
+  const signupBtn=document.getElementById('signupBtn');
+  if(!loginBtn||!signupBtn)return;
+  if(mode==='signup'){
+    // Modo registro: primario = Crear cuenta, secundario = Ya tengo cuenta
+    loginBtn.style.display='none';
+    signupBtn.className='login-primary';
+    signupBtn.innerHTML=`<span data-i18n="Crear cuenta">${T('Crear cuenta')}</span>`;
+    // Agregar botón volver
+    if(!document.getElementById('backToLoginBtn')){
+      const back=document.createElement('button');
+      back.id='backToLoginBtn';back.className='login-link';
+      back.innerHTML=`<span>${LANG==='en'?'Already have an account? Sign in':'¿Ya tienes cuenta? Inicia sesión'}</span>`;
+      back.onclick=()=>setLoginMode('login');
+      signupBtn.insertAdjacentElement('afterend',back);
+    }
+    document.getElementById('loginEmail').autocomplete='email';
+    document.getElementById('loginPass').autocomplete='new-password';
+  }else{
+    // Modo login: restaurar
+    loginBtn.style.display='';
+    signupBtn.className='login-link';
+    signupBtn.innerHTML=`<span data-i18n="Crear cuenta">${T('Crear cuenta')}</span>`;
+    const back=document.getElementById('backToLoginBtn');
+    if(back)back.remove();
+    document.getElementById('loginPass').autocomplete='current-password';
+  }
+}
+
 function showLogin(){document.getElementById('loginScreen').classList.remove('hidden');document.getElementById('app').classList.add('hidden')}
 function startApp(){setUserRow();document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');TASKS=[];PROJECTS=defaultProjects();PEOPLE=[];DRAFTS={};loadLocal();rollover();render();cloudInit();scheduleRefreshToken()}
 function scheduleRefreshToken(){const ms=SESSION&&SESSION.expires_in?(SESSION.expires_in-120)*1000:3300000;setTimeout(async()=>{if(await refreshToken())scheduleRefreshToken();else showLogin()},ms>0?ms:60000)}
