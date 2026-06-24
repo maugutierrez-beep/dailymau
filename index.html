@@ -551,6 +551,52 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 .adm-email{font-weight:500;color:var(--ink)}
 .adm-meta{font-size:11px;color:var(--ink-3);margin-top:1px}
 
+
+/* ── ONBOARDING TOUR ── */
+.tour-overlay{position:fixed;inset:0;z-index:3000;pointer-events:none}
+.tour-backdrop{position:fixed;inset:0;background:rgba(10,18,30,.75);z-index:3001;transition:opacity .3s}
+.tour-card{position:fixed;z-index:3002;background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:20px;width:300px;box-shadow:0 24px 64px rgba(0,0,0,.4);pointer-events:all}
+.tour-step-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(232,121,75,.12);color:var(--accent);font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;margin-bottom:10px;border:1px solid rgba(232,121,75,.2)}
+.tour-title{font-family:var(--font-h,var(--font-display));font-size:16px;font-weight:700;color:var(--ink);margin-bottom:7px}
+.tour-desc{font-size:13.5px;color:var(--ink-2);line-height:1.6;margin-bottom:16px}
+.tour-actions{display:flex;justify-content:space-between;align-items:center}
+.tour-dots{display:flex;gap:5px}
+.tour-dot{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.tour-dot.active{background:var(--accent);width:18px;border-radius:4px}
+.tour-btns{display:flex;gap:8px}
+.tour-skip{background:none;border:none;color:var(--ink-3);font-size:12px;cursor:pointer;padding:6px 8px;font-family:var(--font-b)}
+.tour-next{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-b)}
+.tour-spotlight{position:fixed;z-index:3001;border-radius:12px;box-shadow:0 0 0 4000px rgba(10,18,30,.75);pointer-events:none;transition:all .35s ease}
+
+
+/* ── EMPTY STATES ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:52px 24px;text-align:center;gap:12px}
+.empty-ico{font-size:44px;opacity:.6;margin-bottom:4px}
+.empty-title{font-family:var(--font-h,var(--font-display));font-size:18px;font-weight:700;color:var(--ink)}
+.empty-desc{font-size:14px;color:var(--ink-3);max-width:280px;line-height:1.6}
+.empty-btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:11px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-b);margin-top:4px;transition:opacity .15s}
+.empty-btn:hover{opacity:.88}
+.empty-hint{font-size:12px;color:var(--ink-3);margin-top:2px}
+
+
+/* ── SHARE TASK ── */
+.share-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;border-radius:12px;padding:12px 20px;font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:10px;z-index:2000;box-shadow:0 8px 24px rgba(0,0,0,.3);opacity:0;transition:opacity .25s}
+.share-toast.show{opacity:1}
+.share-link-box{background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12px;font-family:monospace;color:var(--ink-2);word-break:break-all;margin:10px 0}
+
+
+/* ── WHATSAPP TOOLTIP ── */
+.wa-tooltip{position:fixed;z-index:1500;background:#075E54;color:#fff;border-radius:12px;padding:12px 16px;max-width:260px;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:tooltipIn .25s ease;pointer-events:all}
+.wa-tooltip::before{content:'';position:absolute;bottom:-7px;left:20px;width:14px;height:14px;background:#075E54;transform:rotate(45deg);border-radius:0 0 3px 0}
+.wa-tooltip-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.wa-tooltip-ico{width:24px;height:24px;background:#25D366;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.wa-tooltip-title{font-size:13px;font-weight:700}
+.wa-tooltip-desc{font-size:12px;opacity:.85;line-height:1.5;margin-bottom:10px}
+.wa-tooltip-btns{display:flex;gap:8px}
+.wa-tooltip-yes{background:#25D366;border:none;color:#fff;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;flex:1}
+.wa-tooltip-no{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:7px;padding:6px 10px;font-size:12px;cursor:pointer}
+@keyframes tooltipIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
 </style>
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-CWV8G7JGPC"></script>
@@ -651,12 +697,301 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
 
 <script>
 
+
+// ══════════════════════════════════════════
+// ONBOARDING TOUR
+// ══════════════════════════════════════════
+let tourActive = false;
+const TOUR_STEPS_EN = [
+  {title:'Welcome to jazzdoit! 👋', desc:"Let's get you set up in 3 quick steps. First, create your first task — tap the + button or type in the quick-add bar.", target:'#addBtn', pos:'bottom'},
+  {title:'Organize by project 📂', desc:'Assign tasks to projects to keep things grouped. You can create projects in the sidebar — use colors to tell them apart at a glance.', target:'#navProjects', pos:'right'},
+  {title:'Follow up on WhatsApp 💬', desc:'Assign a task to someone, then go to Messages view to generate a WhatsApp message with all their pending tasks — one tap, ready to send.', target:'#navMsg', pos:'right'},
+];
+const TOUR_STEPS_ES = [
+  {title:'¡Bienvenido a jazzdoit! 👋', desc:'Te guiamos en 3 pasos rápidos. Primero, crea tu primera tarea — toca el botón + o escribe en la barra de entrada rápida.', target:'#addBtn', pos:'bottom'},
+  {title:'Organiza por proyecto 📂', desc:'Asigna tareas a proyectos para mantener todo agrupado. Crea proyectos desde la barra lateral — usa colores para distinguirlos de un vistazo.', target:'#navProjects', pos:'right'},
+  {title:'Seguimiento por WhatsApp 💬', desc:'Asigna una tarea a alguien, luego ve a la vista Mensajes para generar un WhatsApp con todos sus pendientes — un toque, listo para enviar.', target:'#navMsg', pos:'right'},
+];
+
+function getTourSteps(){ return LANG==='en' ? TOUR_STEPS_EN : TOUR_STEPS_ES; }
+
+function startTour(){
+  if(tourActive) return;
+  tourActive = true;
+  localStorage.setItem('jd_tour_done','1');
+  showTourStep(0);
+}
+
+function showTourStep(idx){
+  closeTour();
+  const steps = getTourSteps();
+  if(idx >= steps.length){ tourActive=false; return; }
+  const step = steps[idx];
+  const L = LANG==='en';
+
+  // Backdrop
+  const bd = document.createElement('div');
+  bd.className = 'tour-backdrop'; bd.id = 'tourBackdrop';
+  bd.onclick = ()=>{ closeTour(); tourActive=false; };
+  document.body.appendChild(bd);
+
+  // Card
+  const card = document.createElement('div');
+  card.className = 'tour-card'; card.id = 'tourCard';
+  const dots = steps.map((_,i)=>`<div class="tour-dot${i===idx?' active':''}"></div>`).join('');
+  card.innerHTML = `
+    <div class="tour-step-badge">${idx+1} / ${steps.length}</div>
+    <div class="tour-title">${step.title}</div>
+    <div class="tour-desc">${step.desc}</div>
+    <div class="tour-actions">
+      <div class="tour-dots">${dots}</div>
+      <div class="tour-btns">
+        <button class="tour-skip" onclick="closeTour();tourActive=false">${L?'Skip':'Saltar'}</button>
+        <button class="tour-next" onclick="showTourStep(${idx+1})">${idx===steps.length-1?(L?'Done ✓':'Listo ✓'):(L?'Next →':'Siguiente →')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(card);
+
+  // Position card
+  setTimeout(()=>{
+    const el = document.querySelector(step.target);
+    if(el){
+      const r = el.getBoundingClientRect();
+      const cw = card.offsetWidth, ch = card.offsetHeight;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      let top, left;
+      if(step.pos==='bottom'){ top=r.bottom+12; left=Math.min(r.left,vw-cw-16); }
+      else if(step.pos==='right'){ top=r.top; left=r.right+12; }
+      else { top=r.top-ch-12; left=r.left; }
+      top = Math.max(12, Math.min(top, vh-ch-12));
+      left = Math.max(12, Math.min(left, vw-cw-12));
+      card.style.top = top+'px'; card.style.left = left+'px';
+    } else {
+      card.style.top = '50%'; card.style.left = '50%';
+      card.style.transform = 'translate(-50%,-50%)';
+    }
+  }, 50);
+}
+
+function closeTour(){
+  ['tourBackdrop','tourCard','tourSpotlight'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.remove();
+  });
+}
+
+function maybeStartTour(){
+  if(localStorage.getItem('jd_tour_done')) return;
+  if(TASKS.length <= 5) setTimeout(startTour, 800);
+}
+
+
+// ══════════════════════════════════════════
+// NOTIFICACIONES PUSH (PWA)
+// ══════════════════════════════════════════
+async function requestPushPermission(){
+  if(!('Notification' in window)) return false;
+  if(Notification.permission === 'granted') return true;
+  if(Notification.permission === 'denied') return false;
+  const perm = await Notification.requestPermission();
+  return perm === 'granted';
+}
+
+function showLocalNotification(title, body, icon){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  try{
+    if(navigator.serviceWorker && navigator.serviceWorker.controller){
+      navigator.serviceWorker.ready.then(reg=>{
+        reg.showNotification(title,{body,icon:icon||'/icon-192.png',badge:'/icon-192.png',vibrate:[200,100,200]});
+      });
+    } else {
+      new Notification(title,{body,icon:icon||'/icon-192.png'});
+    }
+  }catch(e){}
+}
+
+function scheduleTaskReminders(){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  const overdue = TASKS.filter(t=>isOpen(t)&&t.due&&daysFrom(t.due)<0).length;
+  const today = TASKS.filter(t=>isOpen(t)&&t.due&&daysFrom(t.due)===0).length;
+  if(overdue > 0){
+    const msg = LANG==='en'
+      ? `You have ${overdue} overdue task${overdue>1?'s':''}. Don't let them pile up!`
+      : `Tienes ${overdue} tarea${overdue>1?'s':''} vencida${overdue>1?'s':''}. ¡No las dejes acumular!`;
+    showLocalNotification(LANG==='en'?'jazzdoit — Overdue tasks':'jazzdoit — Tareas vencidas', msg);
+  } else if(today > 0){
+    const msg = LANG==='en'
+      ? `${today} task${today>1?'s':''} to complete today. Let's go!`
+      : `${today} tarea${today>1?'s':''} para completar hoy. ¡Vamos!`;
+    showLocalNotification(LANG==='en'?'jazzdoit — Today':'jazzdoit — Hoy', msg);
+  }
+}
+
+async function enableNotifications(){
+  const granted = await requestPushPermission();
+  if(granted){
+    toast(LANG==='en'?'🔔 Notifications enabled':'🔔 Notificaciones activadas');
+    localStorage.setItem('jd_notif','1');
+    scheduleTaskReminders();
+    gaEvent('notifications_enabled');
+  } else {
+    toast(LANG==='en'?'Notifications blocked in browser settings':'Notificaciones bloqueadas en ajustes del navegador');
+  }
+}
+
+
+// ══════════════════════════════════════════
+// COMPARTIR TAREA POR LINK
+// ══════════════════════════════════════════
+function generateShareLink(taskId){
+  const task = TASKS.find(t=>t.id===taskId);
+  if(!task) return null;
+  // Codificar datos básicos de la tarea en base64
+  const data = {
+    id: task.id,
+    title: task.title,
+    project: (PROJECTS.find(p=>p.id===task.project)||{}).name || task.project,
+    due: task.due || '',
+    responsible: task.responsible || '',
+    notes: (task.notes||[]).map(n=>n.text||n).join(' | '),
+    from: myName() || 'jazzdoit',
+    ts: Date.now()
+  };
+  const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
+  return `https://app.jazzdoit.co?share=${encoded}`;
+}
+
+function shareTask(taskId){
+  const link = generateShareLink(taskId);
+  if(!link){ toast(T('Tarea no encontrada')); return; }
+  const L = LANG==='en';
+  if(navigator.share){
+    const task = TASKS.find(t=>t.id===taskId);
+    navigator.share({
+      title: 'jazzdoit — ' + (task?.title||''),
+      text: L ? 'Check out this task from jazzdoit' : 'Mira esta tarea de jazzdoit',
+      url: link
+    }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(link).then(()=>{
+      toast(L?'🔗 Link copied to clipboard':'🔗 Link copiado al portapapeles');
+    }).catch(()=>{
+      // Fallback: mostrar el link en un modal
+      openShareModal(link, taskId);
+    });
+  }
+  gaEvent('task_shared', {method: navigator.share ? 'native_share' : 'clipboard'});
+}
+
+function openShareModal(link, taskId){
+  const task = TASKS.find(t=>t.id===taskId);
+  const L = LANG==='en';
+  const m = document.createElement('div');
+  m.className = 'modal-overlay'; m.id = 'shareModal';
+  m.innerHTML = `<div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <h3>${L?'Share task':'Compartir tarea'}</h3>
+      <button class="modal-close" onclick="document.getElementById('shareModal').remove()">${svg(I.x,16)}</button>
+    </div>
+    <div class="modal-body" style="padding:16px">
+      <p style="font-size:13.5px;color:var(--ink-2);margin-bottom:12px">${L?'Anyone with this link can view the task (read-only, no account needed):':'Cualquiera con este link puede ver la tarea (solo lectura, sin cuenta):'}</p>
+      <div class="share-link-box">${escapeH(link)}</div>
+      <button class="btn-primary" style="width:100%" onclick="navigator.clipboard.writeText('${link.replace(/'/g,"\'")}').then(()=>{toast('${L?'Copied!':'¡Copiado!'}');document.getElementById('shareModal').remove()})">
+        ${L?'Copy link':'Copiar link'}
+      </button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+}
+
+// Detectar ?share= al cargar y mostrar la tarea compartida
+function checkSharedTask(){
+  try{
+    const p = new URLSearchParams(window.location.search);
+    const encoded = p.get('share');
+    if(!encoded) return;
+    const data = JSON.parse(decodeURIComponent(atob(encoded)));
+    showSharedTaskView(data);
+  }catch(e){}
+}
+
+function showSharedTaskView(data){
+  const L = LANG==='en';
+  document.getElementById('loginScreen')?.classList.add('hidden');
+  document.getElementById('app')?.classList.add('hidden');
+  const view = document.createElement('div');
+  view.style.cssText = 'position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;z-index:5000';
+  view.innerHTML = `<div style="background:var(--bg-2);border:1px solid var(--line);border-radius:16px;padding:28px;max-width:420px;width:100%;text-align:center">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--accent);text-transform:uppercase;margin-bottom:12px">jazzdoit</div>
+    <div style="font-size:20px;font-weight:700;color:var(--ink);margin-bottom:8px">${escapeH(data.title)}</div>
+    ${data.project?`<div style="font-size:13px;color:var(--ink-3);margin-bottom:6px">📂 ${escapeH(data.project)}</div>`:''}
+    ${data.due?`<div style="font-size:13px;color:var(--ink-3);margin-bottom:6px">📅 ${escapeH(data.due)}</div>`:''}
+    ${data.responsible?`<div style="font-size:13px;color:var(--ink-3);margin-bottom:6px">👤 ${escapeH(data.responsible)}</div>`:''}
+    ${data.notes?`<div style="font-size:13px;color:var(--ink-2);margin:12px 0;padding:10px;background:var(--bg-3);border-radius:8px;text-align:left">${escapeH(data.notes)}</div>`:''}
+    <div style="font-size:12px;color:var(--ink-3);margin:16px 0">${L?`Shared by ${escapeH(data.from)}`:`Compartida por ${escapeH(data.from)}`}</div>
+    <a href="https://app.jazzdoit.co" style="display:inline-block;background:var(--accent);color:#fff;padding:10px 24px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px">${L?'Open jazzdoit →':'Abrir jazzdoit →'}</a>
+  </div>`;
+  document.body.appendChild(view);
+}
+
+
+// ══════════════════════════════════════════
+// TOOLTIP WHATSAPP al asignar tarea
+// ══════════════════════════════════════════
+let waTooltipShown = new Set();
+
+function showWaTooltip(personName, anchorEl){
+  if(!personName || personName==='Yo' || personName==='' ) return;
+  if(waTooltipShown.has(personName)) return;
+  // Solo mostrar si hay tareas pendientes de esta persona
+  const pending = TASKS.filter(t=>isOpen(t)&&respList(t).includes(personName)).length;
+  if(pending < 1) return;
+  waTooltipShown.add(personName);
+  removeWaTooltip();
+
+  const L = LANG==='en';
+  const tip = document.createElement('div');
+  tip.className = 'wa-tooltip'; tip.id = 'waTooltip';
+  tip.innerHTML = `
+    <div class="wa-tooltip-header">
+      <div class="wa-tooltip-ico">💬</div>
+      <div class="wa-tooltip-title">${L?'Follow up on WhatsApp':'Dar seguimiento por WhatsApp'}</div>
+    </div>
+    <div class="wa-tooltip-desc">${L
+      ? `${escapeH(personName)} has ${pending} pending task${pending>1?'s':''}. Send a quick WhatsApp summary?`
+      : `${escapeH(personName)} tiene ${pending} tarea${pending>1?'s':''} pendiente${pending>1?'s':''}. ¿Enviar un resumen por WhatsApp?`
+    }</div>
+    <div class="wa-tooltip-btns">
+      <button class="wa-tooltip-yes" onclick="removeWaTooltip();state.view='mensajes';render()">${L?'Go to Messages':'Ver Mensajes'}</button>
+      <button class="wa-tooltip-no" onclick="removeWaTooltip()">${L?'Not now':'Ahora no'}</button>
+    </div>`;
+
+  // Posicionar relativo al anchor o al centro
+  document.body.appendChild(tip);
+  if(anchorEl){
+    const r = anchorEl.getBoundingClientRect();
+    tip.style.top = (r.top - tip.offsetHeight - 12) + 'px';
+    tip.style.left = Math.max(8, r.left) + 'px';
+  } else {
+    tip.style.bottom = '90px';
+    tip.style.left = '50%';
+    tip.style.transform = 'translateX(-50%)';
+    tip.style.cssText += ';bottom:90px;left:50%;transform:translateX(-50%)';
+  }
+  // Auto-dismiss después de 8s
+  setTimeout(removeWaTooltip, 8000);
+}
+
+function removeWaTooltip(){
+  const t = document.getElementById('waTooltip');
+  if(t) t.remove();
+}
+
 // ── GA4 eventos desde la app ──
 function gaEvent(name, params){
   try{if(typeof gtag==='function')gtag('event',name,params||{});}catch(e){}
 }
 
-const I18N_EN = {"Get it done": "Get it done", "Iniciar sesión": "Sign in", "Crear cuenta": "Create account", "Continuar con Google": "Continue with Google", "Correo electrónico": "Email", "Contraseña": "Password", "Hoy": "Today", "Mi día": "My day", "Realizadas": "Completed", "Todas": "All", "Personas": "People", "Mensajes": "Messages", "Seguimientos": "Follow-ups", "Revisión diaria": "Daily review", "Calendario": "Calendar", "Inbox": "Inbox", "Admin": "Admin", "Vistas": "Views", "Proyectos": "Projects", "Más": "More", "Nuevo proyecto": "New project", "Nueva persona": "New person", "Agregar tarea": "Add task", "Solo local": "Local only", "Sincronizado": "Synced", "Guardando…": "Saving…", "Error al guardar": "Save error", "Sin conexión": "Offline", "Cancelar": "Cancel", "Guardar": "Save", "Cerrar": "Close", "Copiar": "Copy", "Imprimir": "Print", "Añadir": "Add", "Quitar": "Remove", "Listo": "Done", "Eliminar": "Delete", "Duplicar": "Duplicate", "Editar": "Edit", "Deshacer": "Undo", "Guardar borrador": "Save draft", "Regenerar": "Regenerate", "Proyecto": "Project", "Responsable": "Assignee", "Responsables": "Assignees", "Estado": "Status", "Para el día": "Due date", "Próxima acción": "Next action", "Próxima acción concreta": "Concrete next action", "Próx. seguimiento": "Next follow-up", "Persona relacionada": "Related person", "Canal": "Channel", "Enlaces / archivos": "Links / files", "Notas": "Notes", "Historial": "History", "Subtareas": "Subtasks", "Repetir": "Repeat", "Recordar por correo": "Email reminder", "Tipo": "Type", "Día": "Day", "Enlace": "Link", "Recordatorio": "Reminder", "No repetir": "Don't repeat", "Cada día": "Every day", "Cada semana": "Every week", "Cada 2 semanas": "Every 2 weeks", "Cada mes": "Every month", "Sin recordatorio": "No reminder", "El día de la tarea": "On the due date", "1 día antes": "1 day before", "2 días antes": "2 days before", "Buscar…": "Search…", "Agregar nota…": "Add note…", "Agregar subtarea…": "Add subtask…", "Añade una descripción…": "Add a description…", "Descripción (opcional)": "Description (optional)", "El siguiente paso físico…": "The next physical step…", "URL o referencia": "URL or reference", "¿Cuál es el siguiente paso concreto?": "What's the concrete next step?", "¿Qué hay que hacer?": "What needs to be done?", "Tu nombre": "Your name", "Marcar prioridad": "Set priority", "Quitar prioridad": "Remove priority", "Algún día": "Someday", "Asignar a persona": "Assign to person", "Cerrar sesión": "Sign out", "Descargar respaldo (JSON)": "Download backup (JSON)", "Día anterior": "Previous day", "Día siguiente": "Next day", "Esperando respuesta": "Waiting for reply", "Mañana": "Tomorrow", "Mi perfil": "My profile", "Nota rápida": "Quick note", "Pasar a mañana": "Move to tomorrow", "Recordatorio por correo": "Email reminder", "Reprogramar": "Reschedule", "Se repite": "Repeats", "Tema claro/oscuro": "Light/dark theme", "Agrega tareas o trae las de mañana.": "Add tasks or pull tomorrow's.", "Asignar responsables": "Assign people", "Así te verán en tus tareas y mensajes.": "This is how you'll appear in your tasks and messages.", "Aún nada marcado.": "Nothing checked yet.", "Cargando métricas…": "Loading metrics…", "Día libre": "Free day", "Empezar desde cero": "Start from scratch", "Este proyecto no tiene tareas activas.": "This project has no active tasks.", "Mensaje de seguimiento": "Follow-up message", "Más adelante": "Later", "Nada pendiente.": "Nothing pending.", "Nada urgente.": "Nothing urgent.", "Subir foto": "Upload photo", "Creada": "Created", "Correo": "Email", "Compartir": "Share", "Hechas": "Done", "Nada se quedó atrás. 👏": "Nothing left behind. 👏", "Sin notas aún.": "No notes yet.", "Asigna responsables a tus tareas para verlas aquí.": "Assign people to your tasks to see them here.", "Marca tareas como realizadas (o arrástralas a Realizadas) y aparecerán aquí con su fecha.": "Mark tasks as done (or drag them to Completed) and they'll appear here with their date.", "Nada coincide con tu búsqueda.": "Nothing matches your search.", "Aún no hay usuarios": "No users yet", "Cuando alguien cree una cuenta aparecerá aquí.": "When someone creates an account it'll appear here.", "Esta sección es solo para el administrador.": "This section is for the administrator only.", "Error de autenticación": "Authentication error", "Sin conexión · local": "Offline · local", "Usuarios y métricas de uso": "Users and usage metrics", "Activos 7 días": "Active 7 days", "Activos hoy": "Active today", "Usuarios totales": "Total users", "Nuevos 7 días": "New 7 days", "Tareas creadas": "Tasks created", "Completadas": "Completed", "Promedio tareas": "Avg tasks", "Retención 7d": "7d retention", "Usuarios registrados": "Registered users", "Registro": "Signup", "Última actividad": "Last active", "Tareas": "Tasks", "Inicio y cierre del día": "Start and end of day", "Enfoque para hoy": "Today's focus", "Top 3 del día": "Top 3 of the day", "Idioma": "Language", "Tema: automático": "Theme: automatic", "Tema: claro": "Theme: light", "Tema: oscuro": "Theme: dark", "Prepara y guarda mensajes para cada persona. El borrador toma sus tareas pendientes como base; edítalo a tu gusto y guárdalo para enviarlo cuando quieras.": "Prepare and save messages for each person. The draft uses their pending tasks as a base; edit it as you like and save it to send whenever you want.", "borrador guardado": "draft saved", "Captura rápida sin clasificar": "Quick capture, unsorted", "Captura rápida": "Quick capture", "Tócala una vez para instalarla y tenerla como app, con su ícono y a pantalla completa.": "Tap once to install it as an app, with its own icon and full screen.", "Busca el ícono de instalar ": "Find the install icon ", "Básico": "Basic", "Pendientes rápidos": "Quick to-dos", "Decisión": "Decision", "Ingresa correo y contraseña": "Enter email and password", "Mínimo 6 caracteres en la contraseña": "Password must be at least 6 characters", "Arrastrada al día de hoy": "Moved to today", "Pasada a mañana": "Moved to tomorrow", "Todo lo tuyo quedó cerrado.": "Everything of yours is wrapped up.", "¿Regenerar desde las tareas pendientes? Se perderán tus ediciones.": "Regenerate from pending tasks? Your edits will be lost.", "👋 ¡Bienvenido! Marca esta tarea como hecha y mira el confeti": "👋 Welcome! Mark this task as done and watch the confetti", "miércoles": "Wednesday", "sábado": "Saturday", "Trabajo, Personal y pendientes rápidos": "Work, Personal and quick to-dos", "Eliminar datos de este usuario": "Delete this user's data", "Eliminar datos de usuario": "Delete user data", "Vas a borrar TODOS los datos de": "You're about to delete ALL data for", "tareas": "tasks", "Esta acción no se puede deshacer.": "This action cannot be undone.", "Para confirmar, escribe el correo exacto:": "To confirm, type the exact email:", "Eliminar definitivamente": "Delete permanently", "Eliminando…": "Deleting…", "Usuario eliminado": "User deleted", "Error al eliminar": "Error deleting", "Proyecto eliminado": "Project deleted", "Persona eliminada": "Person removed"};
+const I18N_EN = {"Get it done": "Get it done", "Iniciar sesión": "Sign in", "Crear cuenta": "Create account", "Continuar con Google": "Continue with Google", "Correo electrónico": "Email", "Contraseña": "Password", "Hoy": "Today", "Mi día": "My day", "Realizadas": "Completed", "Todas": "All", "Personas": "People", "Mensajes": "Messages", "Seguimientos": "Follow-ups", "Revisión diaria": "Daily review", "Calendario": "Calendar", "Inbox": "Inbox", "Admin": "Admin", "Vistas": "Views", "Proyectos": "Projects", "Más": "More", "Nuevo proyecto": "New project", "Nueva persona": "New person", "Agregar tarea": "Add task", "Solo local": "Local only", "Sincronizado": "Synced", "Guardando…": "Saving…", "Error al guardar": "Save error", "Sin conexión": "Offline", "Cancelar": "Cancel", "Guardar": "Save", "Cerrar": "Close", "Copiar": "Copy", "Imprimir": "Print", "Añadir": "Add", "Quitar": "Remove", "Listo": "Done", "Eliminar": "Delete", "Duplicar": "Duplicate", "Editar": "Edit", "Deshacer": "Undo", "Guardar borrador": "Save draft", "Regenerar": "Regenerate", "Proyecto": "Project", "Responsable": "Assignee", "Responsables": "Assignees", "Estado": "Status", "Para el día": "Due date", "Próxima acción": "Next action", "Próxima acción concreta": "Concrete next action", "Próx. seguimiento": "Next follow-up", "Persona relacionada": "Related person", "Canal": "Channel", "Enlaces / archivos": "Links / files", "Notas": "Notes", "Historial": "History", "Subtareas": "Subtasks", "Repetir": "Repeat", "Recordar por correo": "Email reminder", "Tipo": "Type", "Día": "Day", "Enlace": "Link", "Recordatorio": "Reminder", "No repetir": "Don't repeat", "Cada día": "Every day", "Cada semana": "Every week", "Cada 2 semanas": "Every 2 weeks", "Cada mes": "Every month", "Sin recordatorio": "No reminder", "El día de la tarea": "On the due date", "1 día antes": "1 day before", "2 días antes": "2 days before", "Buscar…": "Search…", "Agregar nota…": "Add note…", "Agregar subtarea…": "Add subtask…", "Añade una descripción…": "Add a description…", "Descripción (opcional)": "Description (optional)", "El siguiente paso físico…": "The next physical step…", "URL o referencia": "URL or reference", "¿Cuál es el siguiente paso concreto?": "What's the concrete next step?", "¿Qué hay que hacer?": "What needs to be done?", "Tu nombre": "Your name", "Marcar prioridad": "Set priority", "Quitar prioridad": "Remove priority", "Algún día": "Someday", "Asignar a persona": "Assign to person", "Cerrar sesión": "Sign out", "Descargar respaldo (JSON)": "Download backup (JSON)", "Día anterior": "Previous day", "Día siguiente": "Next day", "Esperando respuesta": "Waiting for reply", "Mañana": "Tomorrow", "Mi perfil": "My profile", "Nota rápida": "Quick note", "Pasar a mañana": "Move to tomorrow", "Recordatorio por correo": "Email reminder", "Reprogramar": "Reschedule", "Se repite": "Repeats", "Tema claro/oscuro": "Light/dark theme", "Agrega tareas o trae las de mañana.": "Add tasks or pull tomorrow's.", "Asignar responsables": "Assign people", "Así te verán en tus tareas y mensajes.": "This is how you'll appear in your tasks and messages.", "Aún nada marcado.": "Nothing checked yet.", "Cargando métricas…": "Loading metrics…", "Día libre": "Free day", "Empezar desde cero": "Start from scratch", "Este proyecto no tiene tareas activas.": "This project has no active tasks.", "Mensaje de seguimiento": "Follow-up message", "Más adelante": "Later", "Nada pendiente.": "Nothing pending.", "Nada urgente.": "Nothing urgent.", "Subir foto": "Upload photo", "Creada": "Created", "Correo": "Email", "Compartir": "Share", "Hechas": "Done", "Nada se quedó atrás. 👏": "Nothing left behind. 👏", "Sin notas aún.": "No notes yet.", "Asigna responsables a tus tareas para verlas aquí.": "Assign people to your tasks to see them here.", "Marca tareas como realizadas (o arrástralas a Realizadas) y aparecerán aquí con su fecha.": "Mark tasks as done (or drag them to Completed) and they'll appear here with their date.", "Nada coincide con tu búsqueda.": "Nothing matches your search.", "Aún no hay usuarios": "No users yet", "Cuando alguien cree una cuenta aparecerá aquí.": "When someone creates an account it'll appear here.", "Esta sección es solo para el administrador.": "This section is for the administrator only.", "Error de autenticación": "Authentication error", "Sin conexión · local": "Offline · local", "Usuarios y métricas de uso": "Users and usage metrics", "Activos 7 días": "Active 7 days", "Activos hoy": "Active today", "Usuarios totales": "Total users", "Nuevos 7 días": "New 7 days", "Tareas creadas": "Tasks created", "Completadas": "Completed", "Promedio tareas": "Avg tasks", "Retención 7d": "7d retention", "Usuarios registrados": "Registered users", "Registro": "Signup", "Última actividad": "Last active", "Tareas": "Tasks", "Inicio y cierre del día": "Start and end of day", "Enfoque para hoy": "Today's focus", "Top 3 del día": "Top 3 of the day", "Idioma": "Language", "Tema: automático": "Theme: automatic", "Tema: claro": "Theme: light", "Tema: oscuro": "Theme: dark", "Prepara y guarda mensajes para cada persona. El borrador toma sus tareas pendientes como base; edítalo a tu gusto y guárdalo para enviarlo cuando quieras.": "Prepare and save messages for each person. The draft uses their pending tasks as a base; edit it as you like and save it to send whenever you want.", "borrador guardado": "draft saved", "Captura rápida sin clasificar": "Quick capture, unsorted", "Captura rápida": "Quick capture", "Tócala una vez para instalarla y tenerla como app, con su ícono y a pantalla completa.": "Tap once to install it as an app, with its own icon and full screen.", "Busca el ícono de instalar ": "Find the install icon ", "Básico": "Basic", "Pendientes rápidos": "Quick to-dos", "Decisión": "Decision", "Ingresa correo y contraseña": "Enter email and password", "Mínimo 6 caracteres en la contraseña": "Password must be at least 6 characters", "Arrastrada al día de hoy": "Moved to today", "Pasada a mañana": "Moved to tomorrow", "Todo lo tuyo quedó cerrado.": "Everything of yours is wrapped up.", "¿Regenerar desde las tareas pendientes? Se perderán tus ediciones.": "Regenerate from pending tasks? Your edits will be lost.", "👋 ¡Bienvenido! Marca esta tarea como hecha y mira el confeti": "👋 Welcome! Mark this task as done and watch the confetti", "miércoles": "Wednesday", "sábado": "Saturday", "Trabajo, Personal y pendientes rápidos": "Work, Personal and quick to-dos", "Eliminar datos de este usuario": "Delete this user's data", "Eliminar datos de usuario": "Delete user data", "Vas a borrar TODOS los datos de": "You're about to delete ALL data for", "tareas": "tasks", "Esta acción no se puede deshacer.": "This action cannot be undone.", "Para confirmar, escribe el correo exacto:": "To confirm, type the exact email:", "Eliminar definitivamente": "Delete permanently", "Eliminando…": "Deleting…", "Usuario eliminado": "User deleted", "Error al eliminar": "Error deleting", "Proyecto eliminado": "Project deleted", "Persona eliminada": "Person removed", "Notificaciones push": "Push notifications", "Tarea no encontrada": "Task not found"};
 function detectLang(){try{const s=localStorage.getItem('jd_lang');if(s)return s;}catch(e){}const n=(navigator.language||'en').toLowerCase();return n.startsWith('es')?'es':'en';}
 let LANG=detectLang();try{document.documentElement.lang=LANG;}catch(e){}
 function t(s){if(LANG==='en'&&I18N_EN[s])return I18N_EN[s];return s;}
@@ -817,7 +1152,7 @@ function setLoginMode(mode){
 }
 
 function showLogin(){document.getElementById('loginScreen').classList.remove('hidden');document.getElementById('app').classList.add('hidden')}
-function startApp(){setUserRow();document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');TASKS=[];PROJECTS=defaultProjects();PEOPLE=[];DRAFTS={};loadLocal();rollover();render();cloudInit();scheduleRefreshToken()}
+function startApp(){maybeStartTour();setUserRow();document.getElementById('loginScreen').classList.add('hidden');document.getElementById('app').classList.remove('hidden');TASKS=[];PROJECTS=defaultProjects();PEOPLE=[];DRAFTS={};loadLocal();rollover();render();cloudInit();scheduleRefreshToken()}
 function scheduleRefreshToken(){const ms=SESSION&&SESSION.expires_in?(SESSION.expires_in-120)*1000:3300000;setTimeout(async()=>{if(await refreshToken())scheduleRefreshToken();else showLogin()},ms>0?ms:60000)}
 function showError(msg){document.getElementById('loginError').textContent=typeof msg==='string'?msg:(msg&&msg.message?msg.message:'Error')}
 function showSuccess(msg){const el=document.getElementById('loginError');if(el){el.textContent=msg;el.style.color='#2d8a4e';el.style.display='block'}}
@@ -1272,7 +1607,19 @@ function bindProjects(){document.querySelectorAll('[data-pid]').forEach(c=>c.onc
 function renderDay(){
   const today=TASKS.filter(t=>isOpen(t)&&t.due&&daysFrom(t.due)<=0);
   const tmr=TASKS.filter(t=>isOpen(t)&&t.due===addD(1)).length;
-  let h=`<div class="day-summary">${today.length?`Tienes <b>${today.length}</b> tarea(s) para hoy.`:'No tienes tareas para hoy.'}</div>`;
+  const L=LANG==='en';
+  let h='';
+  if(!today.length){
+    h+=`<div class="empty-state">
+      <div class="empty-ico">✨</div>
+      <div class="empty-title">${L?'Your day is clear!':'¡Tu día está despejado!'}</div>
+      <div class="empty-desc">${L?'What do you want to accomplish today?':'¿Qué quieres lograr hoy?'}</div>
+      <button class="empty-btn" onclick="document.getElementById('quickInput')?.focus()">${L?'+ Add your first task':'+ Agrega tu primera tarea'}</button>
+      <div class="empty-hint">${L?'Or use the quick bar above':'O usa la barra de entrada rápida arriba'}</div>
+    </div>`;
+  } else {
+    h+=`<div class="day-summary">${L?`<b>${today.length}</b> task(s) for today`:`Tienes <b>${today.length}</b> tarea(s) para hoy`}</div>`;
+  }
   h+=`<div class="day-actions">`;
   if(tmr)h+=`<button class="day-bring" id="bringT">${svg(I.arrow,14)} Traer ${tmr} de mañana a hoy</button>`;
   if(today.length)h+=`<button class="day-copy" id="copyDayBtn">${svg(I.copy||I.layers,14)} Copiar mi día</button>`;
@@ -1842,7 +2189,11 @@ function openRespPicker(t){
   pop.style.top=(r.bottom+6+window.scrollY)+'px';pop.style.left=Math.min(r.left,window.innerWidth-300)+'px';
   const apply=()=>{const checked=[...pop.querySelectorAll('input:checked')].map(c=>c.value);t.responsible=checked.join(', ');logH(t,'Responsables: '+respFull(t));save();render()};
   pop.querySelectorAll('input').forEach(c=>c.onchange=apply);
-  document.getElementById('respDone').onclick=()=>{pop.remove();cloudSave()};
+  document.getElementById('respDone').onclick=()=>{
+    const respAfter=respList(t).filter(r=>r&&r!=='Yo'&&r!=='')[0];
+    pop.remove();cloudSave();
+    if(respAfter) setTimeout(()=>showWaTooltip(respAfter,null),500);
+  };
   document.getElementById('respNew').onclick=()=>{const n=prompt('Nombre de la nueva persona:');if(n&&n.trim()){const nm=n.trim();if(!PEOPLE.includes(nm)&&normPerson(nm)!=='Yo')PEOPLE.push(nm);const cur=respList(t);cur.push(nm);t.responsible=cur.join(', ');save();pop.remove();openRespPicker(TASKS.find(x=>x.id===t.id))}};
   setTimeout(()=>{const close=(e)=>{if(!pop.contains(e.target)&&e.target.id!=='respBtn'){pop.remove();document.removeEventListener('mousedown',close)}};document.addEventListener('mousedown',close)},100);
 }
