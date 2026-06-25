@@ -2196,7 +2196,7 @@ function renderDay(){
       <div class="empty-ico">✨</div>
       <div class="empty-title">${L?'Your day is clear!':'¡Tu día está despejado!'}</div>
       <div class="empty-desc">${L?'What do you want to accomplish today?':'¿Qué quieres lograr hoy?'}</div>
-      <button class="empty-btn" onclick="document.getElementById('quickInput')?.focus()">${L?'+ Add your first task':'+ Agrega tu primera tarea'}</button>
+      <button class="empty-btn" onclick="openModal()">${L?'+ Add your first task':'+ Agrega tu primera tarea'}</button>
       <div class="empty-hint">${L?'Or use the quick bar above':'O usa la barra de entrada rápida arriba'}</div>
     </div>`;
   } else {
