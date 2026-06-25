@@ -765,7 +765,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
       <button class="profile-btn" id="profileBtn" title="Mi perfil" data-i18n-title="Mi perfil"><span class="av-sm" id="profileAv"></span></button>
       <div class="cloud-pill" id="cloud"><span class="cloud-dot"></span><span data-i18n="Solo local">Solo local</span></div>
       <button class="icon-btn" id="themeBtn" title="Tema claro/oscuro" data-i18n-title="Tema claro/oscuro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
-      <button class="icon-btn" id="logoutBtn" title="Cerrar sesión" data-i18n-title="Cerrar sesión"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+      <button class="icon-btn" id="logoutBtn" title=T("Cerrar sesión") data-i18n-title="Cerrar sesión"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
       <button class="icon-btn" id="exportBtn" title="Descargar respaldo (JSON)" data-i18n-title="Descargar respaldo (JSON)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
     </div>
     <div class="gvc-credit">
@@ -811,7 +811,7 @@ input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink)}
         <div class="mfield"><label><span data-i18n="Responsable">Responsable</span></label><select id="mResp"></select></div>
       </div>
       <div class="mfield" style="margin-bottom:10px"><label><span data-i18n="Para el día">Para el día</span></label><input type="date" id="mDue"></div>
-      <div class="mfield" style="margin-bottom:10px"><label><span data-i18n="Próxima acción concreta">Próxima acción concreta</span></label><input id="mNext" placeholder="El siguiente paso físico…" data-i18n-ph="El siguiente paso físico…"></div>
+      <div class="mfield" style="margin-bottom:10px"><label><span data-i18n=T("Próxima acción concreta")>Próxima acción concreta</span></label><input id="mNext" placeholder=T("El siguiente paso físico…") data-i18n-ph="El siguiente paso físico…"></div>
       <textarea id="mDesc" placeholder="Descripción (opcional)" data-i18n-ph="Descripción (opcional)"></textarea>
       <datalist id="peopleList"></datalist>
     </div>
@@ -951,7 +951,7 @@ function scheduleTaskReminders(){
   if(overdue > 0){
     const msg = LANG==='en'
       ? `You have ${overdue} overdue task${overdue>1?'s':''}. Don't let them pile up!`
-      : `Tienes ${overdue} tarea${overdue>1?'s':''} vencida${overdue>1?'s':''}. ¡No las dejes acumular!`;
+      : `Tienes ${overdue} tarea${overdue>1?'s':''} ${LANG==='en'?`overdue`:`vencida${overdue>1?'s':''}`}. ${LANG==='en'?"Don't let them":'¡No las'} dejes acumular!`;
     showLocalNotification(LANG==='en'?'jazzdoit — Overdue tasks':'jazzdoit — Tareas vencidas', msg);
   } else if(today > 0){
     const msg = LANG==='en'
@@ -1063,7 +1063,7 @@ function showSharedTaskView(data){
     ${data.responsible?`<div style="font-size:13px;color:var(--ink-3);margin-bottom:6px">👤 ${escapeH(data.responsible)}</div>`:''}
     ${data.notes?`<div style="font-size:13px;color:var(--ink-2);margin:12px 0;padding:10px;background:var(--bg-3);border-radius:8px;text-align:left">${escapeH(data.notes)}</div>`:''}
     <div style="font-size:12px;color:var(--ink-3);margin:16px 0">${L?`Shared by ${escapeH(data.from)}`:`Compartida por ${escapeH(data.from)}`}</div>
-    <a href="https://app.jazzdoit.co" style="display:inline-block;background:var(--accent);color:#fff;padding:10px 24px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px">${L?'Open jazzdoit →':'Abrir jazzdoit →'}</a>
+    <a href="https://app.jazzdoit.co" style="display:inline-block;background:var(--accent);color:#fff;padding:10px 24px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px">${L?'Open jazzdoit →':T('Abrir jazzdoit →')}</a>
   </div>`;
   document.body.appendChild(view);
 }
@@ -1093,10 +1093,10 @@ function showWaTooltip(personName, anchorEl){
     </div>
     <div class="wa-tooltip-desc">${L
       ? `${escapeH(personName)} has ${pending} pending task${pending>1?'s':''}. Send a quick WhatsApp summary?`
-      : `${escapeH(personName)} tiene ${pending} tarea${pending>1?'s':''} pendiente${pending>1?'s':''}. ¿Enviar un resumen por WhatsApp?`
+      : `${escapeH(personName)} tiene ${pending} tarea${pending>1?'s':''} pendiente${pending>1?'s':''}. ${LANG==='en'?'Send a WhatsApp summary?':'¿Enviar un resumen por WhatsApp?'}`
     }</div>
     <div class="wa-tooltip-btns">
-      <button class="wa-tooltip-yes" onclick="removeWaTooltip();state.view='mensajes';render()">${L?'Go to Messages':'Ver Mensajes'}</button>
+      <button class="wa-tooltip-yes" onclick="removeWaTooltip();state.view='mensajes';render()">${L?'Go to Messages':T('Ver Mensajes')}</button>
       <button class="wa-tooltip-no" onclick="removeWaTooltip()">${L?'Not now':'Ahora no'}</button>
     </div>`;
 
@@ -1128,7 +1128,7 @@ function updateOnlineStatus(){
   const banner=document.getElementById('offlineBanner');
   const txt=document.getElementById('offlineBannerText');
   if(!navigator.onLine){
-    if(banner){banner.classList.add('show');if(txt)txt.textContent=L?'No connection — changes will sync when reconnected':'Sin conexión — los cambios se sincronizarán al reconectar';}
+    if(banner){banner.classList.add('show');if(txt)txt.textContent=L?'No connection — changes will sync when reconnected':T('Sin conexión — los cambios se sincronizarán al reconectar');}
   } else {
     if(banner)banner.classList.remove('show');
     showSyncAnim();
@@ -1604,7 +1604,7 @@ function gaEvent(name, params){
   try{if(typeof gtag==='function')gtag('event',name,params||{});}catch(e){}
 }
 
-const I18N_EN = {"Get it done": "Get it done", "Iniciar sesión": "Sign in", "Crear cuenta": "Create account", "Continuar con Google": "Continue with Google", "Correo electrónico": "Email", "Contraseña": "Password", "Hoy": "Today", "Mi día": "My day", "Realizadas": "Completed", "Todas": "All", "Personas": "People", "Mensajes": "Messages", "Seguimientos": "Follow-ups", "Revisión diaria": "Daily review", "Calendario": "Calendar", "Inbox": "Inbox", "Admin": "Admin", "Vistas": "Views", "Proyectos": "Projects", "Más": "More", "Nuevo proyecto": "New project", "Nueva persona": "New person", "Agregar tarea": "Add task", "Solo local": "Local only", "Sincronizado": "Synced", "Guardando…": "Saving…", "Error al guardar": "Save error", "Sin conexión": "Offline", "Cancelar": "Cancel", "Guardar": "Save", "Cerrar": "Close", "Copiar": "Copy", "Imprimir": "Print", "Añadir": "Add", "Quitar": "Remove", "Listo": "Done", "Eliminar": "Delete", "Duplicar": "Duplicate", "Editar": "Edit", "Deshacer": "Undo", "Guardar borrador": "Save draft", "Regenerar": "Regenerate", "Proyecto": "Project", "Responsable": "Assignee", "Responsables": "Assignees", "Estado": "Status", "Para el día": "Due date", "Próxima acción": "Next action", "Próxima acción concreta": "Concrete next action", "Próx. seguimiento": "Next follow-up", "Persona relacionada": "Related person", "Canal": "Channel", "Enlaces / archivos": "Links / files", "Notas": "Notes", "Historial": "History", "Subtareas": "Subtasks", "Repetir": "Repeat", "Recordar por correo": "Email reminder", "Tipo": "Type", "Día": "Day", "Enlace": "Link", "Recordatorio": "Reminder", "No repetir": "Don't repeat", "Cada día": "Every day", "Cada semana": "Every week", "Cada 2 semanas": "Every 2 weeks", "Cada mes": "Every month", "Sin recordatorio": "No reminder", "El día de la tarea": "On the due date", "1 día antes": "1 day before", "2 días antes": "2 days before", "Buscar…": "Search…", "Agregar nota…": "Add note…", "Agregar subtarea…": "Add subtask…", "Añade una descripción…": "Add a description…", "Descripción (opcional)": "Description (optional)", "El siguiente paso físico…": "The next physical step…", "URL o referencia": "URL or reference", "¿Cuál es el siguiente paso concreto?": "What's the concrete next step?", "¿Qué hay que hacer?": "What needs to be done?", "Tu nombre": "Your name", "Marcar prioridad": "Set priority", "Quitar prioridad": "Remove priority", "Algún día": "Someday", "Asignar a persona": "Assign to person", "Cerrar sesión": "Sign out", "Descargar respaldo (JSON)": "Download backup (JSON)", "Día anterior": "Previous day", "Día siguiente": "Next day", "Esperando respuesta": "Waiting for reply", "Mañana": "Tomorrow", "Mi perfil": "My profile", "Nota rápida": "Quick note", "Pasar a mañana": "Move to tomorrow", "Recordatorio por correo": "Email reminder", "Reprogramar": "Reschedule", "Se repite": "Repeats", "Tema claro/oscuro": "Light/dark theme", "Agrega tareas o trae las de mañana.": "Add tasks or pull tomorrow's.", "Asignar responsables": "Assign people", "Así te verán en tus tareas y mensajes.": "This is how you'll appear in your tasks and messages.", "Aún nada marcado.": "Nothing checked yet.", "Cargando métricas…": "Loading metrics…", "Día libre": "Free day", "Empezar desde cero": "Start from scratch", "Este proyecto no tiene tareas activas.": "This project has no active tasks.", "Mensaje de seguimiento": "Follow-up message", "Más adelante": "Later", "Nada pendiente.": "Nothing pending.", "Nada urgente.": "Nothing urgent.", "Subir foto": "Upload photo", "Creada": "Created", "Correo": "Email", "Compartir": "Share", "Hechas": "Done", "Nada se quedó atrás. 👏": "Nothing left behind. 👏", "Sin notas aún.": "No notes yet.", "Asigna responsables a tus tareas para verlas aquí.": "Assign people to your tasks to see them here.", "Marca tareas como realizadas (o arrástralas a Realizadas) y aparecerán aquí con su fecha.": "Mark tasks as done (or drag them to Completed) and they'll appear here with their date.", "Nada coincide con tu búsqueda.": "Nothing matches your search.", "Aún no hay usuarios": "No users yet", "Cuando alguien cree una cuenta aparecerá aquí.": "When someone creates an account it'll appear here.", "Esta sección es solo para el administrador.": "This section is for the administrator only.", "Error de autenticación": "Authentication error", "Sin conexión · local": "Offline · local", "Usuarios y métricas de uso": "Users and usage metrics", "Activos 7 días": "Active 7 days", "Activos hoy": "Active today", "Usuarios totales": "Total users", "Nuevos 7 días": "New 7 days", "Tareas creadas": "Tasks created", "Completadas": "Completed", "Promedio tareas": "Avg tasks", "Retención 7d": "7d retention", "Usuarios registrados": "Registered users", "Registro": "Signup", "Última actividad": "Last active", "Tareas": "Tasks", "Inicio y cierre del día": "Start and end of day", "Enfoque para hoy": "Today's focus", "Top 3 del día": "Top 3 of the day", "Idioma": "Language", "Tema: automático": "Theme: automatic", "Tema: claro": "Theme: light", "Tema: oscuro": "Theme: dark", "Prepara y guarda mensajes para cada persona. El borrador toma sus tareas pendientes como base; edítalo a tu gusto y guárdalo para enviarlo cuando quieras.": "Prepare and save messages for each person. The draft uses their pending tasks as a base; edit it as you like and save it to send whenever you want.", "borrador guardado": "draft saved", "Captura rápida sin clasificar": "Quick capture, unsorted", "Captura rápida": "Quick capture", "Tócala una vez para instalarla y tenerla como app, con su ícono y a pantalla completa.": "Tap once to install it as an app, with its own icon and full screen.", "Busca el ícono de instalar ": "Find the install icon ", "Básico": "Basic", "Pendientes rápidos": "Quick to-dos", "Decisión": "Decision", "Ingresa correo y contraseña": "Enter email and password", "Mínimo 6 caracteres en la contraseña": "Password must be at least 6 characters", "Arrastrada al día de hoy": "Moved to today", "Pasada a mañana": "Moved to tomorrow", "Todo lo tuyo quedó cerrado.": "Everything of yours is wrapped up.", "¿Regenerar desde las tareas pendientes? Se perderán tus ediciones.": "Regenerate from pending tasks? Your edits will be lost.", "👋 ¡Bienvenido! Marca esta tarea como hecha y mira el confeti": "👋 Welcome! Mark this task as done and watch the confetti", "miércoles": "Wednesday", "sábado": "Saturday", "Trabajo, Personal y pendientes rápidos": "Work, Personal and quick to-dos", "Eliminar datos de este usuario": "Delete this user's data", "Eliminar datos de usuario": "Delete user data", "Vas a borrar TODOS los datos de": "You're about to delete ALL data for", "tareas": "tasks", "Esta acción no se puede deshacer.": "This action cannot be undone.", "Para confirmar, escribe el correo exacto:": "To confirm, type the exact email:", "Eliminar definitivamente": "Delete permanently", "Eliminando…": "Deleting…", "Usuario eliminado": "User deleted", "Error al eliminar": "Error deleting", "Proyecto eliminado": "Project deleted", "Persona eliminada": "Person removed", "Notificaciones push": "Push notifications", "Tarea no encontrada": "Task not found", "Mi progreso": "My progress", "Buenos días": "Good morning", "Buenas tardes": "Good afternoon", "Buenas noches": "Good evening", "¿Olvidaste tu contraseña?": "Forgot your password?", "Historial de lo completado": "Completed tasks history", "Todas las pendientes": "All tasks", "Vista consolidada por proyecto": "Consolidated view by project", "Personas y seguimientos": "People & follow-ups", "Lista de personas con tareas pendientes": "People with pending tasks", "Nombre de la tarea": "Task name", "Nueva tarea": "New task"};
+const I18N_EN = {"Get it done": "Get it done", "Iniciar sesión": "Sign in", "Crear cuenta": "Create account", "Continuar con Google": "Continue with Google", "Correo electrónico": "Email", "Contraseña": "Password", "Hoy": "Today", "Mi día": "My day", "Realizadas": "Completed", "Todas": "All", "Personas": "People", "Mensajes": "Messages", "Seguimientos": "Follow-ups", "Revisión diaria": "Daily review", "Calendario": "Calendar", "Inbox": "Inbox", "Admin": "Admin", "Vistas": "Views", "Proyectos": "Projects", "Más": "More", "Nuevo proyecto": "New project", "Nueva persona": "New person", "Agregar tarea": "Add task", "Solo local": "Local only", "Sincronizado": "Synced", "Guardando…": "Saving…", "Error al guardar": "Save error", "Sin conexión": "Offline", "Cancelar": "Cancel", "Guardar": "Save", "Cerrar": "Close", "Copiar": "Copy", "Imprimir": "Print", "Añadir": "Add", "Quitar": "Remove", "Listo": "Done", "Eliminar": "Delete", "Duplicar": "Duplicate", "Editar": "Edit", "Deshacer": "Undo", "Guardar borrador": "Save draft", "Regenerar": "Regenerate", "Proyecto": "Project", "Responsable": "Assignee", "Responsables": "Assignees", "Estado": "Status", "Para el día": "Due date", "Próxima acción": "Next action", "Próxima acción concreta": "Concrete next action", "Próx. seguimiento": "Next follow-up", "Persona relacionada": "Related person", "Canal": "Channel", "Enlaces / archivos": "Links / files", "Notas": "Notes", "Historial": "History", "Subtareas": "Subtasks", "Repetir": "Repeat", "Recordar por correo": "Email reminder", "Tipo": "Type", "Día": "Day", "Enlace": "Link", "Recordatorio": "Reminder", "No repetir": "Don't repeat", "Cada día": "Every day", "Cada semana": "Every week", "Cada 2 semanas": "Every 2 weeks", "Cada mes": "Every month", "Sin recordatorio": "No reminder", "El día de la tarea": "On the due date", "1 día antes": "1 day before", "2 días antes": "2 days before", "Buscar…": "Search…", "Agregar nota…": "Add note…", "Agregar subtarea…": "Add subtask…", "Añade una descripción…": "Add a description…", "Descripción (opcional)": "Description (optional)", "El siguiente paso físico…": "The next physical step…", "URL o referencia": "URL or reference", "¿Cuál es el siguiente paso concreto?": "What's the concrete next step?", "¿Qué hay que hacer?": "What needs to be done?", "Tu nombre": "Your name", "Marcar prioridad": "Set priority", "Quitar prioridad": "Remove priority", "Algún día": "Someday", "Asignar a persona": "Assign to person", "Cerrar sesión": "Sign out", "Descargar respaldo (JSON)": "Download backup (JSON)", "Día anterior": "Previous day", "Día siguiente": "Next day", "Esperando respuesta": "Waiting for reply", "Mañana": "Tomorrow", "Mi perfil": "My profile", "Nota rápida": "Quick note", "Pasar a mañana": "Move to tomorrow", "Recordatorio por correo": "Email reminder", "Reprogramar": "Reschedule", "Se repite": "Repeats", "Tema claro/oscuro": "Light/dark theme", "Agrega tareas o trae las de mañana.": "Add tasks or pull tomorrow's.", "Asignar responsables": "Assign people", "Así te verán en tus tareas y mensajes.": "This is how you'll appear in your tasks and messages.", "Aún nada marcado.": "Nothing checked yet.", "Cargando métricas…": "Loading metrics…", "Día libre": T("Día libre"), "Empezar desde cero": "Start from scratch", "Este proyecto no tiene tareas activas.": "This project has no active tasks.", "Mensaje de seguimiento": "Follow-up message", "Más adelante": "Later", "Nada pendiente.": "Nothing pending.", "Nada urgente.": "Nothing urgent.", "Subir foto": "Upload photo", "Creada": "Created", "Correo": "Email", "Compartir": "Share", "Hechas": "Done", "Nada se quedó atrás. 👏": "Nothing left behind. 👏", "Sin notas aún.": "No notes yet.", "Asigna responsables a tus tareas para verlas aquí.": "Assign people to your tasks to see them here.", "Marca tareas como realizadas (o arrástralas a Realizadas) y aparecerán aquí con su fecha.": "Mark tasks as done (or drag them to Completed) and they'll appear here with their date.", "Nada coincide con tu búsqueda.": "Nothing matches your search.", "Aún no hay usuarios": "No users yet", "Cuando alguien cree una cuenta aparecerá aquí.": "When someone creates an account it'll appear here.", "Esta sección es solo para el administrador.": "This section is for the administrator only.", "Error de autenticación": "Authentication error", "Sin conexión · local": "Offline · local", "Usuarios y métricas de uso": "Users and usage metrics", "Activos 7 días": "Active 7 days", "Activos hoy": "Active today", "Usuarios totales": "Total users", "Nuevos 7 días": "New 7 days", "Tareas creadas": "Tasks created", "Completadas": "Completed", "Promedio tareas": "Avg tasks", "Retención 7d": "7d retention", "Usuarios registrados": "Registered users", "Registro": "Signup", "Última actividad": "Last active", "Tareas": "Tasks", "Inicio y cierre del día": "Start and end of day", "Enfoque para hoy": "Today's focus", "Top 3 del día": "Top 3 of the day", "Idioma": "Language", "Tema: automático": "Theme: automatic", "Tema: claro": "Theme: light", "Tema: oscuro": "Theme: dark", "Prepara y guarda mensajes para cada persona. El borrador toma sus tareas pendientes como base; edítalo a tu gusto y guárdalo para enviarlo cuando quieras.": "Prepare and save messages for each person. The draft uses their pending tasks as a base; edit it as you like and save it to send whenever you want.", "borrador guardado": "draft saved", "Captura rápida sin clasificar": "Quick capture, unsorted", "Captura rápida": "Quick capture", "Tócala una vez para instalarla y tenerla como app, con su ícono y a pantalla completa.": "Tap once to install it as an app, with its own icon and full screen.", "Busca el ícono de instalar ": "Find the install icon ", "Básico": "Basic", "Pendientes rápidos": "Quick to-dos", "Decisión": "Decision", "Ingresa correo y contraseña": "Enter email and password", "Mínimo 6 caracteres en la contraseña": "Password must be at least 6 characters", "Arrastrada al día de hoy": "Moved to today", "Pasada a mañana": "Moved to tomorrow", "Todo lo tuyo quedó cerrado.": "Everything of yours is wrapped up.", "¿Regenerar desde las tareas pendientes? Se perderán tus ediciones.": "Regenerate from pending tasks? Your edits will be lost.", "👋 ¡Bienvenido! Marca esta tarea como hecha y mira el confeti": "👋 Welcome! Mark this task as done and watch the confetti", "miércoles": "Wednesday", "sábado": "Saturday", "Trabajo, Personal y pendientes rápidos": "Work, Personal and quick to-dos", "Eliminar datos de este usuario": "Delete this user's data", "Eliminar datos de usuario": "Delete user data", "Vas a borrar TODOS los datos de": "You're about to delete ALL data for", "tareas": "tasks", "Esta acción no se puede deshacer.": "This action cannot be undone.", "Para confirmar, escribe el correo exacto:": "To confirm, type the exact email:", "Eliminar definitivamente": "Delete permanently", "Eliminando…": "Deleting…", "Usuario eliminado": "User deleted", "Error al eliminar": "Error deleting", "Proyecto eliminado": "Project deleted", "Persona eliminada": "Person removed", "Notificaciones push": "Push notifications", "Tarea no encontrada": "Task not found", "Mi progreso": "My progress", "Buenos días": "Good morning", "Buenas tardes": "Good afternoon", "Buenas noches": "Good evening", "¿Olvidaste tu contraseña?": "Forgot your password?", "Historial de lo completado": "Completed tasks history", "Todas las pendientes": "All tasks", "Vista consolidada por proyecto": "Consolidated view by project", "Personas y seguimientos": "People & follow-ups", "Lista de personas con tareas pendientes": "People with pending tasks", "Nombre de la tarea": "Task name", "Nueva tarea": "New task", "Copiar link": "Copy link", "Copiar mi día": "Copy my day", "Guardar nueva contraseña": "Save new password", "Abrir jazzdoit →": "Open jazzdoit →", "Ver Mensajes": "Go to Messages", "Enviar link de recuperación": "Send reset link", "Crear lista de tareas inicial": "Create initial task list", "Siguiente →": "Next →", "Reabierta": "Reopened", "Sin fecha": "No date", "Sin resultados": "No results", "Sin seguimientos": "No follow-ups", "Sin personas": "No people", "Sin pendientes": "No pending tasks", "Sin tareas para hoy.": "No tasks for today.", "Sin conexión — los cambios se sincronizarán al reconectar": "Offline — changes will sync when reconnected", "No hay nada pendiente en esta vista.": "Nothing pending in this view.", "Sin borrador. Toca para preparar uno.": "No draft. Tap to prepare one.", "Sin seguimientos hoy.": "No follow-ups today.", "(Sin tareas pendientes registradas por ahora.)\n": "(No pending tasks recorded yet.)\n", "Próximas": "Upcoming", "realizadas": "completed", "personas": "people", "personal": "personal", "Nada pendiente para esta persona.": "Nothing pending for this person."};
 function detectLang(){try{const s=localStorage.getItem('jd_lang');if(s)return s;}catch(e){}const n=(navigator.language||'en').toLowerCase();return n.startsWith('es')?'es':'en';}
 let LANG=detectLang();try{document.documentElement.lang=LANG;}catch(e){}
 function t(s){if(LANG==='en'&&I18N_EN[s])return I18N_EN[s];return s;}
@@ -2077,7 +2077,7 @@ function byDate(a,b){const da=daysFrom(a.due),db=daysFrom(b.due);
 function renderSearch(){
   const q=state.search.toLowerCase();
   let list=TASKS.filter(t=>!t.deleted&&(t.title+' '+(t.description||'')+' '+projName(t.project)+' '+(t.responsible||'')+' '+(t.relatedPerson||'')+' '+(t.nextAction||'')).toLowerCase().includes(q));
-  if(!list.length)return emptyState('Sin resultados','Nada coincide con "'+escapeH(state.search)+'".');
+  if(!list.length)return emptyState(T('Sin resultados'),'Nada coincide con "'+escapeH(state.search)+'".');
   // Abiertas primero, luego realizadas
   const open=list.filter(t=>isOpen(t)).sort(byDate);
   const done=list.filter(t=>isDone(t)).sort((a,b)=>(b.completedAt||'').localeCompare(a.completedAt||''));
@@ -2136,7 +2136,7 @@ function taskRow(t){
 
 function renderSeguimientos(){
   let list=applyFilters(TASKS.filter(t=>isOpen(t)&&(t.type==='seguimiento'||t.status==='esperando'))).sort(byDate);
-  if(!list.length)return emptyState('Sin seguimientos','Convierte un tema en seguimiento cuando dependa de otra persona.');
+  if(!list.length)return emptyState(T('Sin seguimientos'),'Convierte un tema en seguimiento cuando dependa de otra persona.');
   return list.map(t=>{const ch=CHANNELS.find(c=>c.id===t.channel);
     return `<div class="task ${state.sel===t.id?'sel':''}" data-id="${t.id}" draggable="true">
       <button class="check ${isDone(t)?'on':''}" data-check="${t.id}">${svg(I.check,11)}</button>
@@ -2144,7 +2144,7 @@ function renderSeguimientos(){
         <div class="t-meta">
           <span class="who sup"><span class="av" style="background:${colorFor(respList(t)[0]||'')}">${initials(respList(t)[0]||'?')}</span>${escapeH(respFull(t)||t.relatedPerson||'—')}</span>
           ${ch&&ch.id?`<span class="tag tag-proj">${ch.name}</span>`:''}
-          ${t.lastContact?`<span class="due">Últ. contacto: ${dueLabel(t.lastContact)}</span>`:''}
+          ${t.lastContact?`<span class="due">${LANG==='en'?'Last contact':'Últ. contacto'}: ${dueLabel(t.lastContact)}</span>`:''}
           ${t.nextReview?`<span class="due ${daysFrom(t.nextReview)<=0?'today':''}">${svg(I.clock,11)} Próx: ${dueLabel(t.nextReview)}</span>`:''}
           <span class="tag tag-proj">${statusName(t.status)}</span>
         </div>
@@ -2159,7 +2159,7 @@ function renderPersonView(){
   let h='';
   if(state.person!=='Yo'&&state.person!=='(sin asignar)')h+=`<div class="proj-toolbar"><button class="del-proj" data-delperson="${escapeAttr(state.person)}">${svg(I.trash,14)} Eliminar persona</button></div>`;
   if(state.person!=='Yo'&&state.person!=='(sin asignar)')h+=`<button class="wa-btn" data-followup="${escapeAttr(state.person)}">${svg(I.chat,16)} Mensaje de seguimiento</button>`;
-  h+=`<div class="b-add" data-addperson="1" style="margin:0 0 10px">${PLUS}Agregar tarea</div>`;
+  h+=`<div class="b-add" data-addperson="1" style="margin:0 0 10px">${PLUS}${T('Agregar tarea')}</div>`;
   h+=list.length?list.map(taskRow).join(''):`<div class="empty" style="padding:36px 20px"><h3>Sin pendientes</h3><p>${state.person==='Yo'?'No tienes tareas asignadas.':escapeH(state.person)+' no tiene tareas asignadas.'}</p></div>`;
   return h;
 }
@@ -2167,7 +2167,7 @@ function renderProjectView(){
   const all=applyFilters(TASKS.filter(t=>t.project===state.proj&&isOpen(t)));
   let h='';
   if(state.proj!=='general')h+=`<div class="proj-toolbar"><button class="del-proj" data-delproj="${state.proj}">${svg(I.trash,14)} Eliminar proyecto</button></div>`;
-  h+=`<div class="b-add" data-addproj="1" style="margin:0 0 10px">${PLUS}Agregar tarea</div>`;
+  h+=`<div class="b-add" data-addproj="1" style="margin:0 0 10px">${PLUS}${T('Agregar tarea')}</div>`;
   if(!all.length)return h+`<div class="empty" style="padding:36px 20px"><h3>Sin pendientes</h3><p>${T('Este proyecto no tiene tareas activas.')}</p></div>`;
   const today=all.filter(t=>t.due&&daysFrom(t.due)<=0).sort(byDate);
   const soon=all.filter(t=>t.due&&daysFrom(t.due)>0).sort(byDate);
@@ -2198,7 +2198,7 @@ function renderAll(){
   if(otros.length)h+=`<div class="group-h">Otros <span class="gc">${otros.length}</span></div>`+otros.map(taskRow).join('');
   return h;
 }
-function emptyState(title='Todo en orden',sub='No hay nada pendiente en esta vista.'){return `<div class="empty"><div class="em-ico">${svg(I.check,48)}</div><h3>${title}</h3><p>${sub}</p></div>`}
+function emptyState(title='Todo en orden',sub=T('No hay nada pendiente en esta vista.')){return `<div class="empty"><div class="em-ico">${svg(I.check,48)}</div><h3>${title}</h3><p>${sub}</p></div>`}
 
 /* ---- PERSONAS ---- */
 function renderPeople(){
@@ -2241,10 +2241,10 @@ function renderDay(){
       <div class="empty-hint">${L?'Or use the quick bar above':'O usa la barra de entrada rápida arriba'}</div>
     </div>`;
   } else {
-    h+=`<div class="day-summary">${L?`<b>${today.length}</b> task(s) for today`:`Tienes <b>${today.length}</b> tarea(s) para hoy`}</div>`;
+    h+=`<div class="day-summary">${L?`<b>${today.length}</b> task(s) for today`:`Tienes <b>${today.length}</b> ${LANG==='en'?'task(s) for today':'tarea(s) para hoy'}`}</div>`;
   }
   h+=`<div class="day-actions">`;
-  if(tmr)h+=`<button class="day-bring" id="bringT">${svg(I.arrow,14)} Traer ${tmr} de mañana a hoy</button>`;
+  if(tmr)h+=`<button class="day-bring" id="bringT">${svg(I.arrow,14)} ${LANG==='en'?`Bring ${tmr} from tomorrow`:`Traer ${tmr} de mañana a hoy`}</button>`;
   if(today.length)h+=`<button class="day-copy" id="copyDayBtn">${svg(I.copy||I.layers,14)} Copiar mi día</button>`;
   h+=`</div>`;
   if(!today.length)return h+`<div class="empty" style="padding:30px 20px"><h3>${T('Día libre')}</h3><p>${T('Agrega tareas o trae las de mañana.')}</p></div>`;
@@ -2283,7 +2283,7 @@ function copyMsg(){const ta=document.getElementById('msgText');ta.select();let o
 function renderMensajes(){
   const people=allPeople().filter(p=>p!=='Yo');
   let h='<div style="padding:2px 0 14px;font-size:13px;color:var(--ink-3)">Prepara y guarda mensajes para cada persona. El borrador toma sus tareas pendientes como base; edítalo a tu gusto y guárdalo para enviarlo cuando quieras.</div>';
-  if(!people.length)return h+emptyState('Sin personas','Asigna responsables a tus tareas para preparar mensajes.');
+  if(!people.length)return h+emptyState(T('Sin personas'),'Asigna responsables a tus tareas para preparar mensajes.');
   h+='<div class="msg-grid">';
   people.forEach(p=>{
     const d=DRAFTS[p];
@@ -2329,7 +2329,7 @@ function renderBoard(){
     <div class="bcol-h"><b>${c.label}</b><span>${c.sub||c.items.length}</span></div>
     <div class="bcol-body" ${c.drop!==''?`data-drop="${c.drop}"`:''}>
       ${c.items.map(t=>acard(t,c.key)).join('')}
-      ${c.key==='up'?`<div class="b-add" data-addmodal="1">${PLUS}Agregar tarea</div>`:`<div class="b-add" data-add="${c.key}" data-drop="${c.drop}">${PLUS}Agregar tarea</div>`}
+      ${c.key==='up'?`<div class="b-add" data-addmodal="1">${PLUS}${T('Agregar tarea')}</div>`:`<div class="b-add" data-add="${c.key}" data-drop="${c.drop}">${PLUS}${T('Agregar tarea')}</div>`}
     </div></div>`).join('')+`</div>`;
 }
 function acard(t,colKey){const sup=!isMine(t);
@@ -2728,7 +2728,7 @@ function renderAdmin(users){
 
 function renderReview(){
   const open=TASKS.filter(isOpen),am=state.revMode==='am';
-  let h=`<div class="review-toggle"><button class="${am?'on':''}" data-rev="am">☀ Mañana</button><button class="${!am?'on':''}" data-rev="pm">🌙 Noche</button></div>`;
+  let h=`<div class="review-toggle"><button class="${am?'on':''}" data-rev="am>${LANG==='en'?'☀ Tomorrow':'☀ Mañana'}</button><button class="${!am?'on':''}" data-rev="pm">🌙 Noche</button></div>`;
   const mineToday=open.filter(t=>isMine(t)&&t.due&&daysFrom(t.due)<=0).sort(byDate);
   if(am){
     const top3=[...mineToday].sort((a,b)=>(b.flag?1:0)-(a.flag?1:0)).slice(0,3);
@@ -2786,7 +2786,7 @@ function renderDetail(){
         <div class="field"><label>${T('Canal')}</label><select data-f="channel">${opt(CHANNELS,t.channel)}</select></div>
         <div class="field full"><label>${T('Enlaces / archivos')}</label><input data-f="links" value="${escapeAttr(t.links)}" placeholder="${T('URL o referencia')}"></div>
       </div></div>
-      <div class="det-section"><div class="det-label">${T('Notas')}</div><div class="note-add"><input id="dNote" placeholder="${T('Agregar nota…')}"><button id="dNoteAdd">${T('Añadir')}</button></div>${(t.notes||[]).slice().reverse().map(n=>`<div class="note"><div class="nt-date">${n.date}</div><div class="nt-txt">${escapeH(n.text)}</div></div>`).join('')||'<div style="font-size:12.5px;color:var(--ink-3)">'+T('Sin notas aún.')+'</div>'}</div>
+      <div class="det-section"><div class="det-label">${T('Notas')}</div><div class="note-add"><input id="dNote" placeholder="${T(T('Agregar nota…'))}"><button id="dNoteAdd">${T('Añadir')}</button></div>${(t.notes||[]).slice().reverse().map(n=>`<div class="note"><div class="nt-date">${n.date}</div><div class="nt-txt">${escapeH(n.text)}</div></div>`).join('')||'<div style="font-size:12.5px;color:var(--ink-3)">'+T('Sin notas aún.')+'</div>'}</div>
       <div class="det-btns">
         <button class="dbtn green" data-d="complete">${svg(I.check,14)} ${isDone(t)?'Reabrir':'Marcar realizado'}</button>
         <button class="dbtn" data-d="snooze">${svg(I.snooze,14)} A mañana</button>
@@ -3034,7 +3034,7 @@ function buildDayText(){
   const projOrder=PROJECTS.map(p=>p.id);
   const order=Object.keys(byproj).sort((a,b)=>{const ia=projOrder.indexOf(a),ib=projOrder.indexOf(b);return (ia<0?999:ia)-(ib<0?999:ib)});
   let txt='📋 Mi día — '+new Date().toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long'})+'\n\n';
-  if(!today.length)return txt+'Sin tareas para hoy.';
+  if(!today.length)return txt+T('Sin tareas para hoy.');
   order.forEach(pid=>{txt+='*'+projName(pid)+'*\n';byproj[pid].forEach(t=>{
     txt+='• '+t.title;
     const resp=respList(t).filter(r=>r!=='Yo');
