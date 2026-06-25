@@ -1,6 +1,6 @@
 // Updated: 2026-06-25T13:14:28.158108
 // jazzdoit Service Worker
-const CACHE = 'jazzdoit-v1';
+const CACHE = 'jazzdoit-v2';
 const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 // Instalar: cachear el shell de la app
