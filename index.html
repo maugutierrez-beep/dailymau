@@ -2350,7 +2350,7 @@ function checkReferral(){
 // ══════════════════════════════════════════════════════════
 let calYear  = new Date().getFullYear();
 let calMonth = new Date().getMonth(); // 0-based
-let calSelDay = todayStr();           // selected day YYYY-MM-DD
+let calSelDay = null;                 // lazy: set on first render
 
 function calPad(n){ return String(n).padStart(2,'0'); }
 function calDateStr(y,m,d){ return `${y}-${calPad(m+1)}-${calPad(d)}`; }
@@ -2397,6 +2397,7 @@ function calAddTaskForDay(dateStr){
 }
 
 function renderCalendar(){
+  if(!calSelDay) calSelDay = todayStr();
   const L = LANG==='en';
   const today = todayStr();
   const daysInMonth = calDaysInMonth(calYear, calMonth);
