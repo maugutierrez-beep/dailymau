@@ -2195,6 +2195,60 @@ document.addEventListener('keydown', function(e){
   }
 });
 
+
+// ── SISTEMA DE INVITACIÓN ──
+function getInviteLink(){
+  const uid = getUserId() || 'jd';
+  const code = btoa(uid).replace(/=/g,'').slice(0,8);
+  return `https://app.jazzdoit.co?ref=${code}`;
+}
+
+function openInviteModal(){
+  const L = LANG==='en';
+  const link = getInviteLink();
+  const m = document.createElement('div');
+  m.className='modal-overlay'; m.id='inviteModal';
+  m.innerHTML=`<div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <h3>${L?'Invite a colleague':'Invita a un colega'}</h3>
+      <button class="modal-close" onclick="document.getElementById('inviteModal').remove()">${svg(I.x,16)}</button>
+    </div>
+    <div class="modal-body" style="padding:16px;display:flex;flex-direction:column;gap:14px">
+      <p style="font-size:14px;color:var(--ink-2);line-height:1.6">
+        ${L
+          ? 'Share jazzdoit with someone on your team. When they sign up through your link, they will get a warm welcome.'
+          : 'Comparte jazzdoit con alguien de tu equipo. Cuando se registre por tu link, recibirá una bienvenida especial.'}
+      </p>
+      <div style="background:var(--bg-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12.5px;font-family:monospace;color:var(--ink-2);word-break:break-all">${escapeH(link)}</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="
+          navigator.clipboard?.writeText('${link.replace(/'/g,"\'")}').then(()=>toast('${L?'✓ Link copied!':'✓ Link copiado!'}'));
+          document.getElementById('inviteModal').remove();
+        " style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-b)">
+          📋 ${L?'Copy link':'Copiar link'}
+        </button>
+        ${navigator.share?`<button onclick="
+          navigator.share({title:'jazzdoit',text:'${L?'Hey, try jazzdoit — a task app that actually keeps you on track!':'Mira jazzdoit — la app de tareas que de verdad te ayuda a cumplir!'}',url:'${link}'});
+          document.getElementById('inviteModal').remove();
+        " style="flex:1;background:var(--bg-2);border:1px solid var(--line);border-radius:9px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-b);color:var(--ink)">
+          🔗 ${L?'Share':'Compartir'}
+        </button>`:''}
+      </div>
+      <p style="font-size:12px;color:var(--ink-3);text-align:center">${L?'jazzdoit is completely free for everyone.':'jazzdoit es completamente gratis para todos.'}</p>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  gaEvent('invite_modal_opened');
+}
+
+// Detectar ref al cargar
+function checkReferral(){
+  try{
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    if(ref) localStorage.setItem('jd_ref', ref);
+  }catch(e){}
+}
+
 // ── GA4 eventos desde la app ──
 function gaEvent(name, params){
   try{if(typeof gtag==='function')gtag('event',name,params||{});}catch(e){}
