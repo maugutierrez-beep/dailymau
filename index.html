@@ -2679,61 +2679,86 @@ function openProjectSummary(projId){
   const proj = PROJECTS.find(p=>p.id===projId)||{name:projId};
   const tasks = TASKS.filter(t=>t.project===projId&&isOpen(t));
   const overdue = tasks.filter(t=>t.due&&daysFrom(t.due)<0).length;
-  const today   = tasks.filter(t=>t.due&&daysFrom(t.due)===0).length;
+  const todayCount = tasks.filter(t=>t.due&&daysFrom(t.due)===0).length;
   const summary = generateProjectSummary(projId);
 
+  // Remover modal anterior si existe
+  document.getElementById('projectSummaryModal')?.remove();
+
   const m = document.createElement('div');
-  m.className='modal-overlay'; m.id='projectSummaryModal';
-  m.innerHTML=`<div class="modal" style="max-width:540px">
-    <div class="modal-header">
+  m.className='modal-overlay';
+  m.id='projectSummaryModal';
+  m.style.cssText='position:fixed;inset:0;z-index:800;background:rgba(20,20,18,.5);display:flex;align-items:flex-end;justify-content:center;padding:0';
+
+  const panel = document.createElement('div');
+  panel.className='modal';
+  panel.style.cssText='width:100%;max-width:540px;border-radius:16px 16px 0 0;padding:0;overflow:hidden';
+
+  panel.innerHTML = `
+    <div class="modal-header" style="padding:16px 20px 12px">
       <div>
         <div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent);text-transform:uppercase;margin-bottom:2px">${L?'Project summary':'Resumen del proyecto'}</div>
         <h3 style="font-size:17px">${escapeH(proj.name)}</h3>
       </div>
-      <button class="modal-close" onclick="document.getElementById('projectSummaryModal').remove()">${svg(I.x,16)}</button>
+      <button class="modal-close" id="closeSummaryBtn" style="flex-shrink:0">${svg(I.x,16)}</button>
     </div>
-    <div class="modal-body summary-modal-body" style="padding:16px">
-      <div class="summary-stats">
-        <span class="summary-stat"><b>${tasks.length}</b> ${L?'pending':'pendientes'}</span>
-        ${overdue?`<span class="summary-stat" style="color:#dc2626"><b>${overdue}</b> ${L?'overdue':'vencidas'}</span>`:''}
-        ${today?`<span class="summary-stat" style="color:var(--accent)"><b>${today}</b> ${L?'today':'hoy'}</span>`:''}
+    <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--ink-3)">
+        <span style="background:var(--bg-3);border-radius:6px;padding:4px 8px"><b>${tasks.length}</b> ${L?'pending':'pendientes'}</span>
+        ${overdue?`<span style="background:var(--bg-3);border-radius:6px;padding:4px 8px;color:#dc2626"><b>${overdue}</b> ${L?'overdue':'vencidas'}</span>`:''}
+        ${todayCount?`<span style="background:var(--bg-3);border-radius:6px;padding:4px 8px;color:var(--accent)"><b>${todayCount}</b> ${L?'today':'hoy'}</span>`:''}
       </div>
-      <textarea class="summary-textarea" id="summaryText" readonly>${escapeH(summary)}</textarea>
-      <div style="font-size:12px;color:var(--ink-3)">${L?'Tap the text to edit before copying.':'Toca el texto para editar antes de copiar.'}</div>
-      <div class="summary-actions">
-        <button class="summary-copy-btn" onclick="
-          const txt=document.getElementById('summaryText').value;
-          navigator.clipboard?.writeText(txt).then(()=>{
-            toast('${L?'✓ Copied to clipboard':'✓ Copiado al portapapeles'}');
-            document.getElementById('projectSummaryModal').remove();
-          });
-        ">
-          📋 ${L?'Copy text':'Copiar texto'}
-        </button>
-        <button class="summary-wa-btn" onclick="
-          const txt=document.getElementById('summaryText').value;
-          window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
-          gaEvent('project_summary_whatsapp');
-        ">
-          💬 WhatsApp
-        </button>
+      <textarea id="summaryTextarea" style="width:100%;min-height:200px;max-height:320px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;line-height:1.7;font-family:var(--font-b);background:var(--bg-2);color:var(--ink);resize:vertical"></textarea>
+      <p style="font-size:12px;color:var(--ink-3)">${L?'Edit the text before copying.':'Edita el texto antes de copiar.'}</p>
+      <div style="display:flex;gap:8px">
+        <button id="summaryCopyBtn" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:9px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-b)">📋 ${L?'Copy text':'Copiar texto'}</button>
+        <button id="summaryWaBtn" style="flex:1;background:#25D366;color:#fff;border:none;border-radius:9px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font-b)">💬 WhatsApp</button>
       </div>
-      ${navigator?.share?`<button onclick="
-        const txt=document.getElementById('summaryText').value;
-        navigator.share({title:'${escapeH(proj.name)}',text:txt});
-        gaEvent('project_summary_share');
-      " style="width:100%;background:var(--bg-2);border:1px solid var(--line);border-radius:9px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-b);color:var(--ink)">
-        🔗 ${L?'Share...':'Compartir...'}
-      </button>`:''}
     </div>
-  </div>`;
+  `;
+
+  m.appendChild(panel);
   document.body.appendChild(m);
 
-  // Hacer editable el textarea
-  const ta = document.getElementById('summaryText');
-  if(ta) ta.removeAttribute('readonly');
+  // Setear el texto del textarea
+  const ta = document.getElementById('summaryTextarea');
+  if(ta) ta.value = summary;
 
-  gaEvent('project_summary_opened', {project: projId, tasks: tasks.length});
+  // Wiring de botones — sin onclick inline
+  document.getElementById('closeSummaryBtn').onclick = ()=>m.remove();
+  m.onclick = (e)=>{ if(e.target===m) m.remove(); };
+
+  document.getElementById('summaryCopyBtn').onclick = ()=>{
+    const txt = document.getElementById('summaryTextarea')?.value||summary;
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(txt).then(()=>{
+        toast(L?'✓ Copied to clipboard':'✓ Copiado al portapapeles');
+        m.remove();
+      }).catch(()=>{
+        // Fallback
+        if(document.getElementById('summaryTextarea')){
+          document.getElementById('summaryTextarea').select();
+          document.execCommand('copy');
+          toast(L?'✓ Copied':'✓ Copiado');
+          m.remove();
+        }
+      });
+    } else {
+      document.getElementById('summaryTextarea')?.select();
+      document.execCommand('copy');
+      toast(L?'✓ Copied':'✓ Copiado');
+      m.remove();
+    }
+    gaEvent('project_summary_copy',{project:projId});
+  };
+
+  document.getElementById('summaryWaBtn').onclick = ()=>{
+    const txt = document.getElementById('summaryTextarea')?.value||summary;
+    window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+    gaEvent('project_summary_whatsapp',{project:projId});
+  };
+
+  gaEvent('project_summary_opened',{project:projId,tasks:tasks.length});
 }
 
 // ── GA4 eventos desde la app ──
